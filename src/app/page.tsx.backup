@@ -1,0 +1,1191 @@
+'use client';
+
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Image as ImageIcon, Mic, BarChart3, Vote, Paperclip, Plus, User, LogOut, Ban, Smile, Heart, Star, Circle, Square, Triangle, Minimize2, Maximize2, X, Menu, MessageCircle, ShoppingBag, Package, CreditCard, Users, Church as ChurchIcon, Home as HomeIcon } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+type MessageType = 'text' | 'image' | 'voice' | 'graph' | 'voting' | 'attachment' | 'emoticon';
+
+interface Message {
+  id: string;
+  type: MessageType;
+  content: string | File | Blob | { name: string; value: number }[] | { question: string; options: string[]; votes: number[] };
+  timestamp: Date;
+  status: 'sending' | 'sent' | 'read' | 'unread';
+}
+
+interface Room {
+  id: string;
+  name: string;
+}
+
+const defaultRooms: Room[] = [
+  { id: 'general', name: 'General' },
+  { id: 'store', name: 'Store' },
+  { id: 'orders', name: 'Orders' },
+  { id: 'payment', name: 'Payment' },
+  { id: 'friends', name: 'Friends' },
+  { id: 'church', name: 'Church' },
+  { id: 'family', name: 'Family' },
+];
+
+const roomIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  general: MessageCircle,
+  store: ShoppingBag,
+  orders: Package,
+  payment: CreditCard,
+  friends: Users,
+  church: ChurchIcon,
+  family: HomeIcon,
+};
+
+const initialRoomUsers: Record<string, { name: string; online: boolean; lastMessage: string }[]> = {
+  general: [
+    { name: 'Alice', online: true, lastMessage: 'Hello everyone!' },
+    { name: 'Bob', online: true, lastMessage: 'How are you?' },
+    { name: 'Charlie', online: false, lastMessage: 'See you later' },
+  ],
+  store: [
+    { name: 'Diana', online: true, lastMessage: 'New products in stock' },
+    { name: 'Eve', online: false, lastMessage: 'Thanks for the update' },
+  ],
+  orders: [
+    { name: 'Frank', online: true, lastMessage: 'Order confirmed' },
+  ],
+  payment: [
+    { name: 'Grace', online: false, lastMessage: 'Payment received' },
+  ],
+  friends: [
+    { name: 'Henry', online: true, lastMessage: 'Let\'s hang out' },
+  ],
+  church: [
+    { name: 'Ivy', online: true, lastMessage: 'Blessings' },
+  ],
+  family: [
+    { name: 'Jack', online: false, lastMessage: 'Family dinner?' },
+  ],
+};
+
+export default function Home() {
+  const [rooms, setRooms] = useState<Room[]>(defaultRooms);
+  const [roomIdMap, setRoomIdMap] = useState<Record<string, number>>({});
+  const [currentRoom, setCurrentRoom] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const room = urlParams.get('room');
+      if (room && defaultRooms.find(r => r.id === room)) {
+        return room;
+      }
+    }
+    return 'general';
+  });
+  const [roomUsers, setRoomUsers] = useState<Record<string, { name: string; online: boolean; lastMessage: string }[]>>(initialRoomUsers);
+  const [inviteInput, setInviteInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [bannedUsers, setBannedUsers] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Record<string, Message[]>>({});
+  const [inputText, setInputText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [selectedIcon, setSelectedIcon] = useState<string>('User');
+  const [showEmoticonPicker, setShowEmoticonPicker] = useState(false);
+  const [isEmbedded] = useState(typeof window !== 'undefined' && window.self !== window.top);
+  const [compactMode] = useState(typeof window !== 'undefined' && (window.self !== window.top || new URLSearchParams(window.location.search).get('compact') === 'true'));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768; // Auto-hide sidebar on mobile
+    }
+    return false;
+  });
+  const [isModalMode, setIsModalMode] = useState(false);
+  const [isModalMaximized, setIsModalMaximized] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('maximized') === 'true';
+    }
+    return false;
+  });
+  const [hideModalHeader, setHideModalHeader] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('hideHeader') === 'true';
+    }
+    return false;
+  });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const username = 'User'; // Replace with actual user data
+
+  const fetchMessages = useCallback(async (roomId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8088/api/messages?room_id=${roomId}`);
+      const data = await response.json();
+      if (data.success) {
+        const apiMessages: Message[] = (data.data || []).map((msg: any) => ({
+          id: msg.id.toString(),
+          type: msg.message_type || 'text',
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+          status: 'read'
+        }));
+        setMessages(prev => ({
+          ...prev,
+          [currentRoom]: apiMessages
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  }, [currentRoom]);
+
+  const changeRoom = useCallback((roomId: string) => {
+    setCurrentRoom(roomId);
+    // Fetch messages for the new room
+    const roomIdNum = roomIdMap[roomId];
+    if (roomIdNum) {
+      fetchMessages(roomIdNum);
+    }
+    // Notify WebSocket about room change
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'join',
+        room: roomId,
+        user: username
+      }));
+    }
+  }, [fetchMessages, roomIdMap]);
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:8088/api/rooms');
+      const data = await response.json();
+      if (data.success) {
+        const apiRooms = data.data.map((room: any) => ({
+          id: room.name,
+          name: room.name.charAt(0).toUpperCase() + room.name.slice(1)
+        }));
+        const idMap: Record<string, number> = {};
+        data.data.forEach((room: any) => {
+          idMap[room.name] = room.id;
+        });
+        setRooms(apiRooms);
+        setRoomIdMap(idMap);
+      }
+    } catch (error) {
+      console.error('Failed to fetch rooms:', error);
+    }
+  }, []);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:8088/api/users');
+      const data = await response.json();
+      if (data.success) {
+        // Convert API users to the expected format
+        const apiUsers: Record<string, { name: string; online: boolean; lastMessage: string }[]> = {};
+        data.data.forEach((user: any) => {
+          // For now, put all users in 'general' room
+          if (!apiUsers['general']) apiUsers['general'] = [];
+          apiUsers['general'].push({
+            name: user.name,
+            online: Math.random() > 0.5, // Mock online status
+            lastMessage: 'Active user'
+          });
+        });
+        setRoomUsers(apiUsers);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  }, []);
+
+  const availableIcons = [
+    { name: 'User', component: User },
+    { name: 'Smile', component: Smile },
+    { name: 'Heart', component: Heart },
+    { name: 'Star', component: Star },
+    { name: 'Circle', component: Circle },
+    { name: 'Square', component: Square },
+    { name: 'Triangle', component: Triangle },
+  ];
+
+  // Custom GIF emoticons package
+  const availableEmoticons = [
+    'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif', // Happy
+    'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', // Sad
+    'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif', // Angry
+    'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif', // Love
+    'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', // Cool
+    'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif', // Wow
+    'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', // Laugh
+    'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif', // Cry
+  ];
+
+  const renderIcon = (iconName: string, size: number = 24, className: string = 'text-gray-500') => {
+    const icon = availableIcons.find(i => i.name === iconName);
+    if (icon) {
+      const IconComponent = icon.component;
+      return <IconComponent size={size} className={className} />;
+    }
+    return <User size={size} className={className} />;
+  };
+
+  const renderRoomIcon = (roomId: string, size: number = 20, className: string = '') => {
+    const IconComponent = roomIcons[roomId];
+    if (IconComponent) {
+      return <IconComponent size={size} className={className} />;
+    }
+    return <MessageCircle size={size} className={className} />;
+  };
+
+  const handleInvite = () => {
+    if (inviteInput.trim()) {
+      const newUser = { name: inviteInput, online: true, lastMessage: 'Joined the room' };
+      setRoomUsers(prev => ({
+        ...prev,
+        [currentRoom]: [...(prev[currentRoom] || []), newUser],
+      }));
+      setInviteInput('');
+    }
+  };
+
+  const handleLogout = () => {
+    alert('Logged out');
+    // Implement logout logic here
+  };
+
+  const banUser = (userName: string) => {
+    setRoomUsers(prev => ({
+      ...prev,
+      [currentRoom]: prev[currentRoom]?.filter(user => user.name !== userName) || [],
+    }));
+    setBannedUsers(prev => [...prev, userName]);
+  };
+
+  const unbanUser = (userName: string) => {
+    setBannedUsers(prev => prev.filter(name => name !== userName));
+  };
+
+  const loadChatHistory = () => {
+    const mockHistory: Message[] = [
+      { id: 'old1', type: 'text', content: 'Welcome to the chat!', timestamp: new Date(Date.now() - 86400000), status: 'read' },
+      { id: 'old2', type: 'text', content: 'This is an archived message.', timestamp: new Date(Date.now() - 86400000 * 2), status: 'read' },
+    ];
+    setMessages(prev => ({
+      ...prev,
+      [currentRoom]: [...mockHistory, ...(prev[currentRoom] || [])],
+    }));
+  };
+
+  const addMessage = useCallback((type: MessageType, content: string | File | Blob | { name: string; value: number }[] | { question: string; options: string[]; votes: number[] }) => {
+    const newMessage: Message = {
+      id: crypto.randomUUID(),
+      type,
+      content,
+      timestamp: new Date(),
+      status: 'sending',
+    };
+    setMessages(prev => ({
+      ...prev,
+      [currentRoom]: [...(prev[currentRoom] || []), newMessage],
+    }));
+
+    // Send message via WebSocket
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'message',
+        room: currentRoom,
+        user: username,
+        messageType: type,
+        content: typeof content === 'string' ? content : JSON.stringify(content),
+        timestamp: newMessage.timestamp.toISOString()
+      }));
+    }
+
+    // Simulate status change
+    setTimeout(() => {
+      setMessages(prev => ({
+        ...prev,
+        [currentRoom]: prev[currentRoom]?.map(msg => msg.id === newMessage.id ? { ...msg, status: 'sent' as const } : msg) || [],
+      }));
+    }, 1000);
+    setTimeout(() => {
+      setMessages(prev => ({
+        ...prev,
+        [currentRoom]: prev[currentRoom]?.map(msg => msg.id === newMessage.id ? { ...msg, status: 'read' as const } : msg) || [],
+      }));
+    }, 2000);
+  }, [currentRoom]);
+
+  const handleSendText = () => {
+    if (inputText.trim()) {
+      addMessage('text', inputText);
+      setInputText('');
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('http://localhost:8088/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Send message with file URL
+          addMessage('image', data.url);
+        } else {
+          console.error('Upload failed:', data.error);
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
+    }
+  };
+
+  const handleVoiceRecord = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        const chunks: Blob[] = [];
+        mediaRecorder.ondataavailable = (event) => chunks.push(event.data);
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunks, { type: 'audio/wav' });
+          stream.getTracks().forEach(track => track.stop());
+
+          // Upload the voice recording
+          try {
+            const formData = new FormData();
+            formData.append('file', blob, 'voice.wav');
+
+            const response = await fetch('http://localhost:8088/api/upload', {
+              method: 'POST',
+              body: formData,
+            });
+
+            const data = await response.json();
+            if (data.success) {
+              addMessage('voice', data.url);
+            } else {
+              console.error('Voice upload failed:', data.error);
+            }
+          } catch (error) {
+            console.error('Voice upload error:', error);
+          }
+        };
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error('Error recording voice:', error);
+      }
+    }
+  };
+
+  const handleAddGraph = () => {
+    const sampleData = [
+      { name: 'Jan', value: 400 },
+      { name: 'Feb', value: 300 },
+      { name: 'Mar', value: 600 },
+      { name: 'Apr', value: 800 },
+    ];
+    addMessage('graph', sampleData);
+  };
+
+  const handleAddVoting = () => {
+    const poll = {
+      question: 'What is your favorite feature?',
+      options: ['Text', 'Images', 'Voice', 'Graphs'],
+      votes: [0, 0, 0, 0],
+    };
+    addMessage('voting', poll);
+  };
+
+  const handleAttachment = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('http://localhost:8088/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          addMessage('attachment', data.url);
+        } else {
+          console.error('Upload failed:', data.error);
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
+    }
+  };
+
+  const handleSendEmoticon = (emoticonUrl: string) => {
+    addMessage('emoticon', emoticonUrl);
+    setShowEmoticonPicker(false);
+  };
+
+  const toggleMaximize = () => {
+    setIsModalMaximized(!isModalMaximized);
+  };
+
+  const closeModal = () => {
+    // Send message to parent to close modal
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'CLOSE_MODAL' }, '*');
+    }
+  };
+
+  const addRoom = () => {
+    const roomName = prompt('Enter room name:');
+    if (roomName) {
+      const newRoom: Room = { id: Date.now().toString(), name: roomName };
+      setRooms(prev => [...prev, newRoom]);
+    }
+  };
+
+  const renderMessage = (message: Message) => {
+    switch (message.type) {
+      case 'text':
+        return <p>{message.content as string}</p>;
+      case 'image':
+        const imageSrc = typeof message.content === 'string' ? message.content : URL.createObjectURL(message.content as File);
+        return <img src={imageSrc} alt="Uploaded" className="max-w-xs" />;
+      case 'voice':
+        const voiceSrc = typeof message.content === 'string' ? message.content : URL.createObjectURL(message.content as Blob);
+        return <audio controls src={voiceSrc} />;
+      case 'emoticon':
+        return <img src={message.content as string} alt="Emoticon" className="w-16 h-16" />;
+      case 'graph':
+        return (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={message.content as { name: string; value: number }[]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="value" stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+      case 'voting':
+        const poll = message.content as { question: string; options: string[]; votes: number[] };
+        return (
+          <div>
+            <p>{poll.question}</p>
+            {poll.options.map((option: string, index: number) => (
+              <button key={index} className="block bg-blue-500 text-white px-2 py-1 rounded mt-1">
+                {option} ({poll.votes[index]})
+              </button>
+            ))}
+          </div>
+        );
+      case 'attachment':
+        if (typeof message.content === 'string') {
+          return <a href={message.content} download target="_blank" rel="noopener noreferrer">Download File</a>;
+        } else {
+          return <a href={URL.createObjectURL(message.content as File)} download>{(message.content as File).name}</a>;
+        }
+      default:
+        return <p>Unknown message type</p>;
+    }
+  };
+
+  // Detect if running in iframe and handle configuration
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setIsModalMode(urlParams.get('modal') === 'true');
+
+    // Parse URL parameters for configuration
+    const user = urlParams.get('user');
+
+    if (user) {
+      // In a real app, you'd set the username from auth or params
+      console.log('Embedded user:', user);
+    }
+
+    // Establish WebSocket connection
+    const connectWebSocket = () => {
+      const ws = new WebSocket('ws://localhost:8088/ws');
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        // Join the current room
+        ws.send(JSON.stringify({
+          type: 'join',
+          room: currentRoom,
+          user: username
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log('WebSocket message:', data);
+
+        if (data.type === 'message') {
+          // Add incoming message to state
+          const newMessage: Message = {
+            id: data.id || crypto.randomUUID(),
+            type: data.messageType || 'text',
+            content: data.content,
+            timestamp: new Date(data.timestamp || Date.now()),
+            status: 'read'
+          };
+          setMessages(prev => ({
+            ...prev,
+            [data.room]: [...(prev[data.room] || []), newMessage]
+          }));
+        } else if (data.type === 'user_joined') {
+          // Update user status
+          setRoomUsers(prev => ({
+            ...prev,
+            [data.room]: prev[data.room]?.map(user =>
+              user.name === data.user ? { ...user, online: true } : user
+            ) || []
+          }));
+        } else if (data.type === 'user_left') {
+          // Update user status
+          setRoomUsers(prev => ({
+            ...prev,
+            [data.room]: prev[data.room]?.map(user =>
+              user.name === data.user ? { ...user, online: false } : user
+            ) || []
+          }));
+        } else if (data.type === 'typing') {
+          setIsTyping(data.isTyping);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting...');
+        setTimeout(connectWebSocket, 1000);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    };
+
+    connectWebSocket();
+
+    // Fetch rooms and users from API
+    fetchRooms();
+    fetchUsers();
+
+    // Listen for messages from parent window
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'SEND_MESSAGE') {
+        addMessage('text', event.data.message);
+      } else if (event.data.type === 'SET_ROOM') {
+        changeRoom(event.data.room);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Handle window resize for mobile sidebar auto-hide
+    const handleResize = () => {
+      const isMobileNow = window.innerWidth < 768;
+      setSidebarCollapsed(isMobileNow);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('resize', handleResize);
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [addMessage, currentRoom, changeRoom, fetchRooms, fetchUsers, fetchMessages, roomIdMap]);
+
+  // Fetch messages when rooms are loaded or current room changes
+  useEffect(() => {
+    if (Object.keys(roomIdMap).length > 0) {
+      const roomIdNum = roomIdMap[currentRoom];
+      if (roomIdNum) {
+        fetchMessages(roomIdNum);
+      }
+    }
+  }, [roomIdMap, currentRoom, fetchMessages]);
+
+  // Separate effect for hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  return (
+    <>
+      {isHydrated && isModalMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className={`bg-white rounded-lg shadow-xl overflow-hidden transition-all duration-300 ${
+            isModalMaximized
+              ? 'w-full h-full rounded-none'
+              : 'w-11/12 h-5/6 max-w-6xl'
+          }`}>
+            {/* Modal Header */}
+            {!hideModalHeader && (
+              <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                <h2 className="text-lg font-semibold">Chat</h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={toggleMaximize}
+                    className="p-1 hover:bg-gray-200 rounded"
+                    title={isModalMaximized ? "Restore" : "Maximize"}
+                  >
+                    {isModalMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="p-1 hover:bg-red-100 text-red-600 rounded"
+                    title="Close"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Modal Content */}
+            <div className="h-full">
+              <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-gray-100`}>
+                {/* Sidebar - collapsible in embedded mode */}
+                {(!compactMode || !sidebarCollapsed) && (
+                  <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-white shadow-md flex flex-col transition-all duration-300`}>
+                    {/* Sidebar Header */}
+                    <div className="p-4 border-b">
+                      <div className="flex items-center space-x-3">
+                        {renderIcon(selectedIcon, 32)}
+                        <div className="flex-1">
+                          <p className="font-semibold">{username}</p>
+                          <select
+                            value={selectedIcon}
+                            onChange={(e) => setSelectedIcon(e.target.value)}
+                            className="text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer"
+                          >
+                            {availableIcons.map(icon => (
+                              <option key={icon.name} value={icon.name}>
+                                {icon.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {isEmbedded && (
+                          <button
+                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                          >
+                            <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
+                          </button>
+                        )}
+                      </div>
+                      <button onClick={handleLogout} className="mt-4 w-full bg-red-500 text-white py-2 rounded flex items-center justify-center space-x-2">
+                        <LogOut size={16} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+
+                    {/* Users List */}
+                    <div className="flex-1 overflow-y-auto p-4">
+                      <div>
+                        <h3 className="font-semibold mb-2 text-green-600">Online ({(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((u: { name: string; online: boolean; lastMessage: string }) => u.online).length})</h3>
+                        <ul className="space-y-1">
+                          {(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((user: { name: string; online: boolean; lastMessage: string }) => user.online).map((user: { name: string; online: boolean; lastMessage: string }) => (
+                            <li key={user.name} className="flex flex-col group cursor-pointer" onClick={() => changeRoom(`private-${user.name}`)}>
+                              <div className="flex items-center space-x-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                                <span className="font-medium flex-1 hover:text-blue-600">{user.name}</span>
+                                <button onClick={(e) => { e.stopPropagation(); banUser(user.name); }} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700">
+                                  <Ban size={12} />
+                                </button>
+                              </div>
+                              <span className="text-sm text-gray-500 ml-4">{user.lastMessage}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <h3 className="font-semibold mb-2 mt-4 text-gray-600">Offline ({(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((u: { name: string; online: boolean; lastMessage: string }) => !u.online).length})</h3>
+                        <ul className="space-y-1">
+                          {(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((user: { name: string; online: boolean; lastMessage: string }) => !user.online).map((user: { name: string; online: boolean; lastMessage: string }) => (
+                            <li key={user.name} className="flex flex-col group cursor-pointer" onClick={() => changeRoom(`private-${user.name}`)}>
+                              <div className="flex items-center space-x-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-gray-500"></span>
+                                <span className="font-medium flex-1 hover:text-blue-600">{user.name}</span>
+                                <button onClick={(e) => { e.stopPropagation(); banUser(user.name); }} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700">
+                                  <Ban size={12} />
+                                </button>
+                              </div>
+                              <span className="text-sm text-gray-500 ml-4">{user.lastMessage}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        {bannedUsers.length > 0 && (
+                          <>
+                            <h3 className="font-semibold mb-2 mt-4 text-red-600">Banned ({bannedUsers.length})</h3>
+                            <ul className="space-y-1">
+                              {bannedUsers.map(userName => (
+                                <li key={userName} className="flex items-center space-x-2">
+                                  <span className="font-medium">{userName}</span>
+                                  <button onClick={() => unbanUser(userName)} className="text-blue-500 hover:text-blue-700">
+                                    Unban
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Invite Section */}
+                    <div className="p-4 border-t">
+                      <input
+                        type="text"
+                        placeholder="Email or Username"
+                        className="w-full p-2 border rounded"
+                        value={inviteInput}
+                        onChange={(e) => setInviteInput(e.target.value)}
+                      />
+                      <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded">
+                        Invite User
+                      </button>
+                    </div>
+                  </aside>
+                )}
+
+                {/* Chat Container */}
+                <div className="flex-1 flex flex-col">
+                  {/* Header with Rooms */}
+                  <header className={`bg-white shadow-sm ${compactMode ? 'p-2' : 'p-4'}`}>
+                    <div className="flex items-center space-x-4 overflow-x-auto">
+                      <button
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        title={sidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+                      >
+                        <Menu size={20} />
+                      </button>
+                      {currentRoom.startsWith('private-') ? (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => changeRoom('general')}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                            title="Back to General"
+                          >
+                            ← Back
+                          </button>
+                          <div className="flex items-center space-x-2 p-2 bg-blue-500 text-white rounded-lg">
+                            <User size={20} />
+                            <span>{currentRoom.replace('private-', '')}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {rooms.map(room => (
+                            <button
+                              key={room.id}
+                              onClick={() => changeRoom(room.id)}
+                              className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${
+                                currentRoom === room.id ? 'bg-blue-500 text-white' : 'text-gray-600'
+                              }`}
+                              title={room.name}
+                            >
+                              {renderRoomIcon(room.id, 20, currentRoom === room.id ? 'text-white' : 'text-gray-600')}
+                            </button>
+                          ))}
+                          {!compactMode && (
+                            <button onClick={addRoom} className="px-4 py-2 bg-green-500 text-white rounded-lg">
+                              <Plus size={16} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </header>
+
+                  {/* Chat Area */}
+                  <main className="flex-1 overflow-y-auto p-4">
+                    <div className="mb-4">
+                      <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded">
+                        Load Chat History
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {(messages[currentRoom] || []).map(message => (
+                        <div key={message.id} className="flex items-start space-x-2">
+                          {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                          <div className="bg-blue-100 p-3 rounded-lg max-w-xs shadow-sm">
+                            {renderMessage(message)}
+                            <div className="flex items-center justify-between mt-1">
+                              <p className="text-xs text-gray-500">{message.timestamp.toLocaleString()}</p>
+                              <span className="text-xs text-gray-400">
+                                {message.status === 'sending' && 'Sending...'}
+                                {message.status === 'sent' && '✓'}
+                                {message.status === 'read' && '✓✓'}
+                                {message.status === 'unread' && '○'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {isTyping && (
+                        <div className="flex items-start space-x-2">
+                          {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                          <div className="bg-gray-100 p-3 rounded-lg">
+                            <p className="text-sm text-gray-500 italic">Someone is typing...</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </main>
+
+                  {/* Input Area */}
+                  <footer className="bg-white p-4 border-t">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => {
+                          setInputText(e.target.value);
+                          setIsTyping(e.target.value.length > 0);
+                          // Clear typing after 1s
+                          setTimeout(() => setIsTyping(false), 1000);
+                        }}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
+                        placeholder="Type a message..."
+                        className="flex-1 p-2 border rounded-lg"
+                      />
+                      <button onClick={handleSendText} className="p-2 bg-blue-500 text-white rounded-lg">
+                        <Send size={16} />
+                      </button>
+                      <button onClick={() => setShowEmoticonPicker(!showEmoticonPicker)} className="p-2 bg-yellow-500 text-white rounded-lg">
+                        <Smile size={16} />
+                      </button>
+                      <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-gray-500 text-white rounded-lg">
+                        <ImageIcon size={16} />
+                      </button>
+                      <button onClick={handleVoiceRecord} className={`p-2 rounded-lg ${isRecording ? 'bg-red-500' : 'bg-gray-500'} text-white`}>
+                        <Mic size={16} />
+                      </button>
+                      <button onClick={handleAddGraph} className="p-2 bg-purple-500 text-white rounded-lg">
+                        <BarChart3 size={16} />
+                      </button>
+                      <button onClick={handleAddVoting} className="p-2 bg-orange-500 text-white rounded-lg">
+                        <Vote size={16} />
+                      </button>
+                      <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-green-500 text-white rounded-lg">
+                        <Paperclip size={16} />
+                      </button>
+                    </div>
+                    {showEmoticonPicker && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded-lg border">
+                        <div className="grid grid-cols-4 gap-2">
+                          {availableEmoticons.map((emoticon, index) => (
+                            <button
+                              key={index}
+                              onClick={() => handleSendEmoticon(emoticon)}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              <img src={emoticon} alt={`Emoticon ${index + 1}`} className="w-8 h-8" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={(e) => {
+                        if (e.target.files?.[0]?.type.startsWith('image/')) {
+                          handleImageUpload(e);
+                        } else {
+                          handleAttachment(e);
+                        }
+                      }}
+                      className="hidden"
+                      accept="image/*,*"
+                    />
+                  </footer>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-gray-100`}>
+          {/* Sidebar - collapsible in embedded mode */}
+          {(!compactMode || !sidebarCollapsed) && (
+            <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-white shadow-md flex flex-col transition-all duration-300`}>
+              {/* Sidebar Header */}
+              <div className="p-4 border-b">
+                <div className="flex items-center space-x-3">
+                  {renderIcon(selectedIcon, 32)}
+                  <div className="flex-1">
+                    <p className="font-semibold">{username}</p>
+                    <select
+                      value={selectedIcon}
+                      onChange={(e) => setSelectedIcon(e.target.value)}
+                      className="text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer"
+                    >
+                      {availableIcons.map(icon => (
+                        <option key={icon.name} value={icon.name}>
+                          {icon.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {isEmbedded && (
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
+                    </button>
+                  )}
+                </div>
+                <button onClick={handleLogout} className="mt-4 w-full bg-red-500 text-white py-2 rounded flex items-center justify-center space-x-2">
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+
+              {/* Users List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                <div>
+                  <h3 className="font-semibold mb-2 text-green-600">Online ({(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((u: { name: string; online: boolean; lastMessage: string }) => u.online).length})</h3>
+                  <ul className="space-y-1">
+                    {(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((user: { name: string; online: boolean; lastMessage: string }) => user.online).map((user: { name: string; online: boolean; lastMessage: string }) => (
+                      <li key={user.name} className="flex flex-col group cursor-pointer" onClick={() => changeRoom(`private-${user.name}`)}>
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                          <span className="font-medium flex-1 hover:text-blue-600">{user.name}</span>
+                          <button onClick={(e) => { e.stopPropagation(); banUser(user.name); }} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700">
+                            <Ban size={12} />
+                          </button>
+                        </div>
+                        <span className="text-sm text-gray-500 ml-4">{user.lastMessage}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <h3 className="font-semibold mb-2 mt-4 text-gray-600">Offline ({(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((u: { name: string; online: boolean; lastMessage: string }) => !u.online).length})</h3>
+                  <ul className="space-y-1">
+                    {(roomUsers[currentRoom.startsWith('private-') ? 'general' : currentRoom] || []).filter((user: { name: string; online: boolean; lastMessage: string }) => !user.online).map((user: { name: string; online: boolean; lastMessage: string }) => (
+                      <li key={user.name} className="flex flex-col group cursor-pointer" onClick={() => changeRoom(`private-${user.name}`)}>
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-block w-2 h-2 rounded-full bg-gray-500"></span>
+                          <span className="font-medium flex-1 hover:text-blue-600">{user.name}</span>
+                          <button onClick={(e) => { e.stopPropagation(); banUser(user.name); }} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700">
+                            <Ban size={12} />
+                          </button>
+                        </div>
+                        <span className="text-sm text-gray-500 ml-4">{user.lastMessage}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {bannedUsers.length > 0 && (
+                    <>
+                      <h3 className="font-semibold mb-2 mt-4 text-red-600">Banned ({bannedUsers.length})</h3>
+                      <ul className="space-y-1">
+                        {bannedUsers.map(userName => (
+                          <li key={userName} className="flex items-center space-x-2">
+                            <span className="font-medium">{userName}</span>
+                            <button onClick={() => unbanUser(userName)} className="text-blue-500 hover:text-blue-700">
+                              Unban
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Invite Section */}
+              <div className="p-4 border-t">
+                <input
+                  type="text"
+                  placeholder="Email or Username"
+                  className="w-full p-2 border rounded"
+                  value={inviteInput}
+                  onChange={(e) => setInviteInput(e.target.value)}
+                />
+                <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded">
+                  Invite User
+                </button>
+              </div>
+            </aside>
+          )}
+
+          {/* Chat Container */}
+          <div className="flex-1 flex flex-col">
+                  {/* Header with Rooms */}
+                  <header className={`bg-white shadow-sm ${compactMode ? 'p-2' : 'p-4'}`}>
+                    <div className="flex items-center space-x-4 overflow-x-auto">
+                      <button
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        title={sidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+                      >
+                        <Menu size={20} />
+                      </button>
+                      {currentRoom.startsWith('private-') ? (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => changeRoom('general')}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                            title="Back to General"
+                          >
+                            ← Back
+                          </button>
+                          <div className="flex items-center space-x-2 p-2 bg-blue-500 text-white rounded-lg">
+                            <User size={20} />
+                            <span>{currentRoom.replace('private-', '')}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {rooms.map(room => (
+                            <button
+                              key={room.id}
+                              onClick={() => changeRoom(room.id)}
+                              className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${
+                                currentRoom === room.id ? 'bg-blue-500 text-white' : 'text-gray-600'
+                              }`}
+                              title={room.name}
+                            >
+                              {renderRoomIcon(room.id, 20, currentRoom === room.id ? 'text-white' : 'text-gray-600')}
+                            </button>
+                          ))}
+                          {!compactMode && (
+                            <button onClick={addRoom} className="px-4 py-2 bg-green-500 text-white rounded-lg">
+                              <Plus size={16} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </header>            {/* Chat Area */}
+            <main className="flex-1 overflow-y-auto p-4">
+              <div className="mb-4">
+                <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded">
+                  Load Chat History
+                </button>
+              </div>
+              <div className="space-y-2">
+                {(messages[currentRoom] || []).map(message => (
+                  <div key={message.id} className="flex items-start space-x-2">
+                    {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                    <div className="bg-blue-100 p-3 rounded-lg max-w-xs shadow-sm">
+                      {renderMessage(message)}
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-gray-500">{message.timestamp.toLocaleString()}</p>
+                        <span className="text-xs text-gray-400">
+                          {message.status === 'sending' && 'Sending...'}
+                          {message.status === 'sent' && '✓'}
+                          {message.status === 'read' && '✓✓'}
+                          {message.status === 'unread' && '○'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex items-start space-x-2">
+                    {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                      <p className="text-sm text-gray-500 italic">Someone is typing...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </main>
+
+            {/* Input Area */}
+            <footer className="bg-white p-4 border-t">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    setIsTyping(e.target.value.length > 0);
+                    // Clear typing after 1s
+                    setTimeout(() => setIsTyping(false), 1000);
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendText()}
+                  placeholder="Type a message..."
+                  className="flex-1 p-2 border rounded-lg"
+                />
+                <button onClick={handleSendText} className="p-2 bg-blue-500 text-white rounded-lg">
+                  <Send size={16} />
+                </button>
+                <button onClick={() => setShowEmoticonPicker(!showEmoticonPicker)} className="p-2 bg-yellow-500 text-white rounded-lg">
+                  <Smile size={16} />
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-gray-500 text-white rounded-lg">
+                  <ImageIcon size={16} />
+                </button>
+                <button onClick={handleVoiceRecord} className={`p-2 rounded-lg ${isRecording ? 'bg-red-500' : 'bg-gray-500'} text-white`}>
+                  <Mic size={16} />
+                </button>
+                <button onClick={handleAddGraph} className="p-2 bg-purple-500 text-white rounded-lg">
+                  <BarChart3 size={16} />
+                </button>
+                <button onClick={handleAddVoting} className="p-2 bg-orange-500 text-white rounded-lg">
+                  <Vote size={16} />
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-green-500 text-white rounded-lg">
+                  <Paperclip size={16} />
+                </button>
+              </div>
+              {showEmoticonPicker && (
+                <div className="mt-2 p-2 bg-gray-50 rounded-lg border">
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableEmoticons.map((emoticon, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSendEmoticon(emoticon)}
+                        className="p-1 hover:bg-gray-200 rounded"
+                      >
+                        <img src={emoticon} alt={`Emoticon ${index + 1}`} className="w-8 h-8" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => {
+                  if (e.target.files?.[0]?.type.startsWith('image/')) {
+                    handleImageUpload(e);
+                  } else {
+                    handleAttachment(e);
+                  }
+                }}
+                className="hidden"
+                accept="image/*,*"
+              />
+            </footer>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

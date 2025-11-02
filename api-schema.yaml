@@ -1,0 +1,954 @@
+openapi: 3.0.3
+info:
+  title: 8088 XChat Backend API
+  description: Real-time chat application backend API with WebSocket support
+  version: 1.0.0
+  contact:
+    name: 8088 XChat Team
+    email: support@8088xchat.com
+
+servers:
+  - url: http://localhost:8088
+    description: Development server
+  - url: https://api.8088xchat.com
+    description: Production server
+
+components:
+  schemas:
+    # Common Response Types
+    APIResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        message:
+          type: string
+          description: Optional success or error message
+        data:
+          description: Response data (varies by endpoint)
+        error:
+          type: string
+          description: Error message (when success is false)
+
+    PaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/APIResponse'
+        - type: object
+          properties:
+            page:
+              type: integer
+              minimum: 1
+              description: Current page number
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 100
+              description: Number of items per page
+            total:
+              type: integer
+              description: Total number of items
+
+    # User Model
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+        username:
+          type: string
+          description: Unique username
+        email:
+          type: string
+          format: email
+          description: User's email address
+        display_name:
+          type: string
+          description: User's display name
+        avatar_url:
+          type: string
+          format: uri
+          description: URL to user's avatar image
+        status:
+          type: string
+          enum: [online, offline, away]
+          description: User's current status
+        last_seen:
+          type: string
+          format: date-time
+          description: When the user was last seen
+        is_banned:
+          type: boolean
+          description: Whether the user is banned
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    # Room Model
+    Room:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique room identifier
+        name:
+          type: string
+          description: Room name
+        description:
+          type: string
+          description: Room description
+        is_private:
+          type: boolean
+          description: Whether the room is private
+        created_by:
+          type: integer
+          description: ID of user who created the room
+        created_at:
+          type: string
+          format: date-time
+          description: Room creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        user_count:
+          type: integer
+          description: Number of users in the room
+
+    # Message Model
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique message identifier
+        room_id:
+          type: integer
+          description: ID of the room this message belongs to
+        user_id:
+          type: integer
+          description: ID of the user who sent the message
+        user:
+          $ref: '#/components/schemas/User'
+          description: User information (included in detailed responses)
+        content:
+          type: string
+          description: Message content (may be empty for file messages)
+        type:
+          type: string
+          enum: [text, image, voice, graph, voting, attachment, emoticon]
+          description: Type of message
+        file_url:
+          type: string
+          format: uri
+          description: URL to attached file (for file messages)
+        file_name:
+          type: string
+          description: Original filename (for file messages)
+        file_size:
+          type: integer
+          format: int64
+          description: File size in bytes (for file messages)
+        is_deleted:
+          type: boolean
+          description: Whether the message has been deleted
+        created_at:
+          type: string
+          format: date-time
+          description: Message creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    # File Upload Response
+    FileUploadResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL to access the uploaded file
+        filename:
+          type: string
+          description: Original filename
+        size:
+          type: integer
+          format: int64
+          description: File size in bytes
+        type:
+          type: string
+          enum: [image, audio, video, pdf, document, spreadsheet, presentation, text, archive, file]
+          description: File type category
+
+    # WebSocket Message Types
+    WebSocketMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [chat, join, leave, typing, user_status, error]
+          description: Type of WebSocket message
+        room_id:
+          type: integer
+          description: Room identifier (for room-specific messages)
+        user_id:
+          type: integer
+          description: User identifier
+        username:
+          type: string
+          description: Username
+        content:
+          type: string
+          description: Message content
+        data:
+          description: Additional data (varies by message type)
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+
+    # Request Bodies
+    CreateRoomRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Room name
+        description:
+          type: string
+          maxLength: 500
+          description: Room description
+        is_private:
+          type: boolean
+          default: false
+          description: Whether the room should be private
+
+    UpdateRoomRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: New room name
+        description:
+          type: string
+          maxLength: 500
+          description: New room description
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Unique username
+        email:
+          type: string
+          format: email
+          description: User's email address
+        display_name:
+          type: string
+          maxLength: 100
+          description: User's display name
+        avatar_url:
+          type: string
+          format: uri
+          description: URL to user's avatar image
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+          description: New display name
+        avatar_url:
+          type: string
+          format: uri
+          description: New avatar URL
+
+    UpdateUserStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [online, offline, away]
+          description: New user status
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - room_id
+      properties:
+        room_id:
+          type: integer
+          description: ID of the room to send message to
+        user_id:
+          type: integer
+          description: ID of the sending user (optional, defaults to authenticated user)
+        content:
+          type: string
+          description: Message content
+        type:
+          type: string
+          enum: [text, image, voice, graph, voting, attachment, emoticon]
+          default: text
+          description: Type of message
+        file_url:
+          type: string
+          format: uri
+          description: URL to attached file (for file messages)
+        file_name:
+          type: string
+          description: Original filename (for file messages)
+        file_size:
+          type: integer
+          format: int64
+          description: File size in bytes (for file messages)
+
+    UpdateMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: New message content
+
+    DebugLogRequest:
+      type: object
+      required:
+        - level
+        - component
+        - message
+      properties:
+        level:
+          type: string
+          enum: [debug, info, warn, error]
+          description: Log level
+        component:
+          type: string
+          description: Component that generated the log
+        message:
+          type: string
+          description: Log message
+        data:
+          type: object
+          description: Additional log data
+        error:
+          type: string
+          description: Error message (for error logs)
+        timestamp:
+          type: string
+          format: date-time
+          description: Log timestamp
+        session_id:
+          type: string
+          description: Frontend session identifier
+        user_agent:
+          type: string
+          description: User agent string
+
+  parameters:
+    RoomID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Room identifier
+
+    UserID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: User identifier
+
+    MessageID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Message identifier
+
+    RoomIDQuery:
+      name: room_id
+      in: query
+      required: true
+      schema:
+        type: integer
+      description: Room identifier for filtering messages
+
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for pagination
+
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Number of items per page
+
+  responses:
+    Success:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIResponse'
+
+    Created:
+      description: Resource created successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIResponse'
+
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/APIResponse'
+
+paths:
+  # Room endpoints
+  /api/rooms:
+    get:
+      summary: Get all rooms
+      description: Retrieve a list of all chat rooms accessible to the current user
+      tags: [Rooms]
+      responses:
+        '200':
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Room'
+
+    post:
+      summary: Create a new room
+      description: Create a new chat room
+      tags: [Rooms]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/rooms/{id}:
+    parameters:
+      - $ref: '#/components/parameters/RoomID'
+
+    get:
+      summary: Get a specific room
+      description: Retrieve details of a specific chat room
+      tags: [Rooms]
+      responses:
+        '200':
+          description: Room details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Room'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a room
+      description: Update room information (name, description)
+      tags: [Rooms]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      summary: Delete a room
+      description: Delete a chat room
+      tags: [Rooms]
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # User endpoints
+  /api/users:
+    get:
+      summary: Get all users
+      description: Retrieve a list of all users (excluding banned users)
+      tags: [Users]
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+
+    post:
+      summary: Create a new user
+      description: Register a new user account
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserID'
+
+    get:
+      summary: Get a specific user
+      description: Retrieve details of a specific user
+      tags: [Users]
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a user
+      description: Update user information (display name, avatar)
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/UserID'
+
+    put:
+      summary: Update user status
+      description: Update a user's online status
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStatusRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}/ban:
+    parameters:
+      - $ref: '#/components/parameters/UserID'
+
+    post:
+      summary: Ban a user
+      description: Ban a user from the chat system
+      tags: [Users]
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}/unban:
+    parameters:
+      - $ref: '#/components/parameters/UserID'
+
+    post:
+      summary: Unban a user
+      description: Remove ban from a user
+      tags: [Users]
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # Message endpoints
+  /api/messages:
+    get:
+      summary: Get messages for a room
+      description: Retrieve paginated messages for a specific room
+      tags: [Messages]
+      parameters:
+        - $ref: '#/components/parameters/RoomIDQuery'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Paginated list of messages
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    post:
+      summary: Create a new message
+      description: Send a new message to a room
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/messages/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MessageID'
+
+    get:
+      summary: Get a specific message
+      description: Retrieve details of a specific message
+      tags: [Messages]
+      responses:
+        '200':
+          description: Message details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update a message
+      description: Update message content (only by message author)
+      tags: [Messages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMessageRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      summary: Delete a message
+      description: Soft delete a message (only by message author)
+      tags: [Messages]
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # File upload endpoint
+  /api/upload:
+    post:
+      summary: Upload a file
+      description: Upload a file (image, audio, document, etc.) for use in messages
+      tags: [Files]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/APIResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FileUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # Debug endpoint
+  /api/debug/log:
+    post:
+      summary: Submit debug logs
+      description: Submit debug logs from the frontend for server-side logging
+      tags: [Debug]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DebugLogRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/Success'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # WebSocket endpoint
+  /ws:
+    get:
+      summary: WebSocket connection
+      description: |
+        Establish a WebSocket connection for real-time communication.
+
+        **Connection Parameters (query string):**
+        - `room_id` (integer): Room to join
+        - `user_id` (integer): User identifier
+        - `username` (string): Username
+
+        **Message Types:**
+        - `join`: Join a room
+        - `leave`: Leave a room
+        - `chat`: Send a chat message
+        - `typing`: Indicate typing status
+        - `user_status`: Update user status
+
+        **Example Connection:**
+        ```
+        ws://localhost:8088/ws?room_id=1&user_id=1&username=alice
+        ```
+
+        **Example Messages:**
+        ```json
+        // Join room
+        {"type": "join", "room_id": 1, "username": "alice"}
+
+        // Send message
+        {"type": "chat", "room_id": 1, "username": "alice", "content": "Hello!"}
+
+        // Typing indicator
+        {"type": "typing", "room_id": 1, "username": "alice", "data": {"is_typing": true}}
+        ```
+      tags: [WebSocket]
+      parameters:
+        - name: room_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Room identifier
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: User identifier
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Username
+      responses:
+        '101':
+          description: WebSocket connection established
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSocketMessage'
+
+  # Static file serving
+  /uploads/{filename}:
+    get:
+      summary: Get uploaded file
+      description: Retrieve an uploaded file by filename
+      tags: [Files]
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Uploaded file filename
+      responses:
+        '200':
+          description: File content
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+
+tags:
+  - name: Rooms
+    description: Chat room management
+  - name: Users
+    description: User account management
+  - name: Messages
+    description: Message operations
+  - name: Files
+    description: File upload and serving
+  - name: WebSocket
+    description: Real-time communication
+  - name: Debug
+    description: Debug logging
+
+# Security schemes
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (not implemented in current version)
+
+# Global security (disabled for now)
+# security:
+#   - ApiKeyAuth: []
