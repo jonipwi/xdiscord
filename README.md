@@ -1,6 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 8088 XChat Frontend
+
+A modern Next.js-based real-time chat application with two distinct modes: **Full Chat** and **XChat Lite**.
+
+## Features
+
+### Full Chat Mode (`/`)
+- Real-time messaging via WebSocket
+- Multiple chat rooms
+- User presence and typing indicators
+- File uploads (images, audio, documents)
+- Rich message types (text, emoticons, graphs, voting)
+- User management (ban/unban)
+- Light/dark theme support
+
+### XChat Lite Mode (`/lite`)
+- Lightweight, simplified chat interface
+- Optimized for elderly and mobile users
+- **Heavenly Treasure Vault** - Spiritual-themed Solana wallet
+  - Matthew 6:19-21 inspired design
+  - ED25519 keypair generation
+  - BIP39 mnemonic phrase backup
+  - Multi-currency balance (SOL, USDT, USDC)
+  - AES-256 encrypted private key storage
+- **PFI Metrics** - Performance Fairness Index tracking
+- Profile customization with avatar upload
+- Large text and buttons for accessibility
+- Professional, elder-friendly UI design
 
 ## Getting Started
+
+### Development Server
 
 First, run the development server:
 
@@ -16,7 +45,22 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
+
+Create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8088
+NEXT_PUBLIC_FAIRCOIN_API_URL=https://bixio.xyz/faircoin
+```
+
+### Available Routes
+
+- `/` - Full chat interface
+- `/lite?username={name}` - Lite mode with username
+- `/lite/settings?username={name}` - Settings page with wallet and PFI metrics
+
+## Key Technologies
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

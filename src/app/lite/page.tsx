@@ -157,7 +157,8 @@ function LiteChatListContent() {
             <p className="text-gray-600 text-lg mt-1">{t.chooseChat}</p>
           </div>
           <div className="flex items-center space-x-3">
-            <div className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-lg font-semibold">
+            <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-lg font-semibold flex items-center gap-2">
+              <span className="text-amber-500">★</span>
               {t.online}
             </div>
             <button
@@ -180,7 +181,7 @@ function LiteChatListContent() {
             placeholder={t.searchChats}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-14 pr-4 py-4 text-xl border-2 border-gray-300 rounded-2xl focus:border-green-500 focus:outline-none"
+            className="w-full pl-14 pr-4 py-4 text-xl border-2 border-gray-300 rounded-2xl focus:border-emerald-500 focus:outline-none"
           />
         </div>
       </div>
@@ -189,7 +190,7 @@ function LiteChatListContent() {
       <div className="divide-y divide-gray-200">
         {isLoading ? (
           <div className="text-center py-16">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-500 border-t-transparent mx-auto mb-4"></div>
             <p className="text-2xl text-gray-500">{t.loadingChats}</p>
           </div>
         ) : filteredChatList.length === 0 ? (
@@ -208,7 +209,7 @@ function LiteChatListContent() {
               {/* Avatar/Icon */}
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
                 item.type === 'room' 
-                  ? 'bg-linear-to-br from-green-500 to-teal-500' 
+                  ? 'bg-gradient-to-br from-emerald-500 to-teal-500' 
                   : item.status === 'online'
                   ? 'bg-linear-to-br from-blue-500 to-cyan-500'
                   : 'bg-gray-400'
@@ -242,11 +243,11 @@ function LiteChatListContent() {
                   <div className="flex items-center space-x-2">
                     {item.type === 'user' && (
                       <div className={`w-4 h-4 rounded-full ${
-                        item.status === 'online' ? 'bg-green-500' : 'bg-gray-400'
+                        item.status === 'online' ? 'bg-emerald-500' : 'bg-gray-400'
                       }`} />
                     )}
                     {item.unreadCount && item.unreadCount > 0 && (
-                      <div className="bg-green-500 text-white px-3 py-1 rounded-full text-base font-bold min-w-7 text-center">
+                      <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-base font-bold min-w-7 text-center">
                         {item.unreadCount}
                       </div>
                     )}
@@ -269,7 +270,7 @@ export default function LiteChatListPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-500 border-t-transparent mx-auto mb-4"></div>
           <p className="text-2xl text-gray-500">Loading...</p>
         </div>
       </div>

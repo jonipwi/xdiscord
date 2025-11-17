@@ -341,8 +341,8 @@ function ChatRoomContent() {
               {/* Avatar */}
               <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold ${
                 isGroupChat 
-                  ? 'bg-linear-to-br from-green-500 to-teal-500' 
-                  : 'bg-linear-to-br from-blue-500 to-cyan-500'
+                  ? 'bg-gradient-to-br from-emerald-500 to-teal-500' 
+                  : 'bg-gradient-to-br from-blue-500 to-cyan-500'
               }`}>
                 {chatName.charAt(0).toUpperCase()}
               </div>
@@ -393,7 +393,7 @@ function ChatRoomContent() {
                     msg.type === 'graph'
                       ? 'bg-white border-2 border-gray-200 shadow-lg w-full'
                       : msg.isMine
-                      ? 'bg-linear-to-br from-green-500 to-teal-500 text-white rounded-br-none'
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-br-none'
                       : 'bg-white text-gray-800 rounded-bl-none shadow-sm'
                   }`}
                 >

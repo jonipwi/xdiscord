@@ -277,7 +277,7 @@ Created: ${new Date().toISOString()}
           
           <div className="flex items-center space-x-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-linear-to-br from-green-500 to-teal-500 flex items-center justify-center text-white text-5xl font-bold">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-5xl font-bold">
                 {profilePicture ? (
                   <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -286,7 +286,7 @@ Created: ${new Date().toISOString()}
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600"
+                className="absolute bottom-0 right-0 bg-emerald-500 text-white p-3 rounded-full shadow-lg hover:bg-emerald-600"
               >
                 <Camera size={20} />
               </button>
@@ -372,8 +372,11 @@ Created: ${new Date().toISOString()}
         {/* Digital Wallet Section */}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-            <Wallet size={28} className="mr-3 text-purple-500" />
-            {t.walletTitle}
+            <Wallet size={28} className="mr-3 text-emerald-500" />
+            <span className="flex items-center gap-2">
+              {t.walletTitle}
+              <span className="text-amber-500">★</span>
+            </span>
           </h2>
           
           {wallet ? (
@@ -387,7 +390,7 @@ Created: ${new Date().toISOString()}
                   </p>
                   <button
                     onClick={copyToClipboard}
-                    className="flex-shrink-0 p-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                    className="flex-shrink-0 p-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors flex items-center gap-2"
                     title="Copy address to clipboard"
                   >
                     {copied ? (
@@ -410,15 +413,15 @@ Created: ${new Date().toISOString()}
                 {/* SOL Balance */}
                 
                 {/* USDT Balance */}
-                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600">
+                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-amber-50 to-yellow-50 dark:from-gray-700 dark:to-gray-600">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.tokenEntrusted}</p>
-                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                      <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
                         {wallet.balances.USDT.toFixed(4)} USDT
                       </p>
                     </div>
-                    <TrendingUp size={40} className="text-green-500" />
+                    <TrendingUp size={40} className="text-amber-500" />
                   </div>
                 </div>
 
@@ -436,7 +439,7 @@ Created: ${new Date().toISOString()}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={refreshWalletBalances}
-                  className="py-4 px-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 text-xl font-semibold"
+                  className="py-4 px-6 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 text-xl font-semibold"
                 >
                   {t.refreshBalances}
                 </button>
@@ -458,7 +461,7 @@ Created: ${new Date().toISOString()}
               <button
                 onClick={createWallet}
                 disabled={isCreatingWallet}
-                className="w-full py-4 px-6 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-semibold"
+                className="w-full py-4 px-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-semibold"
               >
                 {isCreatingWallet ? t.creatingWallet : t.createWallet}
               </button>
@@ -469,25 +472,31 @@ Created: ${new Date().toISOString()}
         {/* PFI Metrics Section */}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
-            <TrendingUp size={28} className="mr-3 text-green-500" />
-            {t.pfiMetrics}
+            <TrendingUp size={28} className="mr-3 text-emerald-500" />
+            <span className="flex items-center gap-2">
+              {t.pfiMetrics}
+              <span className="text-amber-500">★</span>
+            </span>
           </h2>
           
           <div className="grid grid-cols-1 gap-4">
             {/* PFI Score */}
-            <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-teal-50 dark:from-gray-700 dark:to-gray-600">
+            <div className="border dark:border-gray-700 rounded-xl p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-700 dark:to-gray-600">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.pfiScore}</p>
-                  <p className="text-4xl font-bold text-green-600 dark:text-green-400">
+                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1 flex items-center gap-1">
+                    {t.pfiScore}
+                    <span className="text-amber-500">★</span>
+                  </p>
+                  <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                     {pfiMetrics.score}
                   </p>
                 </div>
-                <PieChart size={48} className="text-green-500" />
+                <PieChart size={48} className="text-emerald-500" />
               </div>
               <div className="mt-3 bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                 <div
-                  className="bg-green-500 h-3 rounded-full transition-all"
+                  className="bg-emerald-500 h-3 rounded-full transition-all"
                   style={{ width: `${(pfiMetrics.score / 1000) * 100}%` }}
                 />
               </div>
@@ -518,7 +527,7 @@ Created: ${new Date().toISOString()}
                     {pfiMetrics.share.toFixed(2)}
                   </p>
                 </div>
-                <Wallet size={48} className="text-purple-500" />
+                <Wallet size={48} className="text-amber-500" />
               </div>
               <p className="text-base text-gray-500 dark:text-gray-400 mt-2">
                 {t.pfiShareValue}
@@ -528,7 +537,7 @@ Created: ${new Date().toISOString()}
 
           <button
             onClick={fetchPFIMetrics}
-            className="w-full mt-4 py-3 px-6 bg-green-500 text-white rounded-xl hover:bg-green-600 text-lg font-semibold"
+            className="w-full mt-4 py-3 px-6 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 text-lg font-semibold"
           >
             {t.refreshMetrics}
           </button>
