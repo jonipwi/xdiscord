@@ -99,15 +99,30 @@ function SettingsContent() {
   // Check for logged-in user from localStorage (wallet login) or URL
   useEffect(() => {
     const urlUsername = searchParams.get('username');
+    const urlWallet = searchParams.get('wallet');
     
     if (urlUsername) {
       setUsername(urlUsername);
+    }
+    
+    // Wallet from URL parameter (passed from parent FairCoin app)
+    if (urlWallet) {
+      const walletInfo: WalletInfo = {
+        address: urlWallet,
+        balances: { SOL: 0, USDT: 0, USDC: 0 },
+        createdAt: new Date()
+      };
+      setWallet(walletInfo);
+      
+      // Fetch actual balance for the wallet
+      fetchWalletBalance(urlWallet);
     } else {
+      // Fallback to localStorage (for standalone usage)
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const userData = JSON.parse(userStr);
-          if (userData.username) {
+          if (!urlUsername && userData.username) {
             setUsername(userData.username);
           }
           // Also load wallet address if available
