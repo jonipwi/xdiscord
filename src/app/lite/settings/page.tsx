@@ -68,7 +68,8 @@ function SettingsContent() {
       // If xchat backend doesn't have the endpoint, try faircoin API directly
       if (!response.ok) {
         const faircoinAPI = process.env.NEXT_PUBLIC_FAIRCOIN_API_URL || 'http://localhost:8100';
-        response = await fetch(`${faircoinAPI}/api/v1/fairness/indexes?username=${encodeURIComponent(username)}`);
+        // Note: faircoin API uses 'user' parameter, not 'username'
+        response = await fetch(`${faircoinAPI}/api/v1/fairness/indexes?user=${encodeURIComponent(username)}`);
       }
       
       const data = await response.json();
