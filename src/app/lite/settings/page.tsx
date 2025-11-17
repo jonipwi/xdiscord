@@ -353,7 +353,7 @@ Created: ${new Date().toISOString()}
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">SOL Balance</p>
                       <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                        {wallet.balances.SOL.toFixed(4)} SOL
+                        {wallet.balances.SOL.toFixed(6)} SOL
                       </p>
                     </div>
                     <Wallet size={40} className="text-purple-500" />
@@ -366,7 +366,7 @@ Created: ${new Date().toISOString()}
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDT Balance</p>
                       <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                        {wallet.balances.USDT.toFixed(4)} USDT
+                        {wallet.balances.USDT.toFixed(6)} USDT
                       </p>
                     </div>
                     <TrendingUp size={40} className="text-green-500" />
@@ -379,7 +379,7 @@ Created: ${new Date().toISOString()}
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDC Balance</p>
                       <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {wallet.balances.USDC.toFixed(4)} USDC
+                        {wallet.balances.USDC.toFixed(6)} USDC
                       </p>
                     </div>
                     <PieChart size={40} className="text-blue-500" />
