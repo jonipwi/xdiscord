@@ -33,13 +33,34 @@ function ChatRoomContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [username, setUsername] = useState('Guest');
 
   // Get chat info from URL params
   const room = searchParams.get('room') || '';
   const roomId = searchParams.get('roomId') || '1';
   const user = searchParams.get('user') || '';
   const userId = searchParams.get('userId') || '';
-  const username = searchParams.get('username') || 'Guest';
+
+  // Check for logged-in user from localStorage (wallet login) or URL
+  useEffect(() => {
+    const urlUsername = searchParams.get('username');
+    
+    if (urlUsername) {
+      setUsername(urlUsername);
+    } else {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          if (userData.username) {
+            setUsername(userData.username);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load user from localStorage:', e);
+      }
+    }
+  }, [searchParams]);
 
   const chatName = room || user || 'Chat';
   const isGroupChat = !!room;

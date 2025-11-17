@@ -29,9 +29,9 @@ interface PFIMetrics {
 function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const username = searchParams.get('username') || 'Guest';
   const { language, setLanguage, t, isRTL } = useLanguage();
   
+  const [username, setUsername] = useState('Guest');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [profilePicture, setProfilePicture] = useState<string>('');
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
@@ -43,6 +43,35 @@ function SettingsContent() {
   const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check for logged-in user from localStorage (wallet login) or URL
+  useEffect(() => {
+    const urlUsername = searchParams.get('username');
+    
+    if (urlUsername) {
+      setUsername(urlUsername);
+    } else {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          if (userData.username) {
+            setUsername(userData.username);
+          }
+          // Also load wallet address if available
+          if (userData.wallet_address) {
+            setWallet({
+              address: userData.wallet_address,
+              balances: { SOL: 0, USDT: 0, USDC: 0 },
+              createdAt: new Date()
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load user from localStorage:', e);
+      }
+    }
+  }, [searchParams]);
 
   // Load saved settings
   useEffect(() => {

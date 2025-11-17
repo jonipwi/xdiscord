@@ -34,11 +34,32 @@ function LiteChatListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const username = searchParams.get('username') || 'Guest';
   
   const [chatList, setChatList] = useState<ChatListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [username, setUsername] = useState('Guest');
+
+  // Check for logged-in user from localStorage (wallet login)
+  useEffect(() => {
+    const urlUsername = searchParams.get('username');
+    
+    if (urlUsername) {
+      setUsername(urlUsername);
+    } else {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.username) {
+            setUsername(user.username);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load user from localStorage:', e);
+      }
+    }
+  }, [searchParams]);
 
   // Standard groups from full version - matching the backend
   const standardGroups = useMemo(() => [
