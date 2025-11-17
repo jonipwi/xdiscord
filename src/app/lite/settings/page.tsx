@@ -375,7 +375,7 @@ Created: ${new Date().toISOString()}
             <Wallet size={28} className="mr-3 text-emerald-500" />
             <span className="flex items-center gap-2">
               {t.walletTitle}
-              <span className="text-amber-500">★</span>
+              <span className="text-amber-500">✨</span>
             </span>
           </h2>
           
@@ -475,7 +475,7 @@ Created: ${new Date().toISOString()}
             <TrendingUp size={28} className="mr-3 text-emerald-500" />
             <span className="flex items-center gap-2">
               {t.pfiMetrics}
-              <span className="text-amber-500">★</span>
+              <span className="text-amber-500">✨</span>
             </span>
           </h2>
           
@@ -486,7 +486,7 @@ Created: ${new Date().toISOString()}
                 <div>
                   <p className="text-lg text-gray-600 dark:text-gray-300 mb-1 flex items-center gap-1">
                     {t.pfiScore}
-                    <span className="text-amber-500">★</span>
+                    <span className="text-amber-500">✨</span>
                   </p>
                   <p className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                     {pfiMetrics.score}
