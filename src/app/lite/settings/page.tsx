@@ -67,7 +67,7 @@ function SettingsContent() {
   const fetchPFIMetrics = async () => {
     try {
       // Use faircoin API directly
-      const faircoinAPI = process.env.NEXT_PUBLIC_FAIRCOIN_API_URL || 'https://bixio.xyz/faircoin';
+      const faircoinAPI = process.env.NEXT_PUBLIC_FAIRCOIN_API_URL || 'https://faircoin-api.bixio.xyz';
       console.log(`[PFI] Fetching metrics from FairCoin API for user: ${username}`);
       console.log(`[PFI] API URL: ${faircoinAPI}/api/v1/fairness/indexes?user=${encodeURIComponent(username)}`);
       
