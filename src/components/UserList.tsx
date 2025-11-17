@@ -104,34 +104,34 @@ export const UserList: React.FC<UserListProps> = ({
     <div className="flex-1 overflow-y-auto p-4">
       {/* Online Users */}
       <div className="mb-4">
-        <h3 className="font-semibold mb-2 text-discord-status-online">
+        <h3 className="font-semibold mb-2 text-green-600">
           Online ({onlineUsers.length})
         </h3>
         <ul className="space-y-1">
           {onlineUsers.map((user) => (
             <li
               key={user.id}
-              className={`flex flex-col group cursor-pointer hover:bg-discord-bg-tertiary p-2 rounded ${
-                currentUser?.id === user.id ? 'bg-discord-bg-accent bg-opacity-20' : ''
+              className={`flex flex-col group cursor-pointer hover:bg-gray-50 p-2 rounded ${
+                currentUser?.id === user.id ? 'bg-blue-50' : ''
               }`}
               onClick={() => handleUserClick(user.id)}
             >
               <div className="flex items-center space-x-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-discord-status-online"></span>
-                <span className="font-medium flex-1 text-discord-text-primary hover:text-discord-text-link">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500"></span>
+                <span className="font-medium flex-1 hover:text-blue-600">
                   {user.username}
                 </span>
                 {currentUser?.id !== user.id && (
                   <button
                     onClick={(e) => handleBanClick(user.id, e)}
-                    className="text-discord-status-dnd hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                    className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
                     title="Ban user"
                   >
                     <Ban size={12} />
                   </button>
                 )}
                 {currentUser?.id === user.id && (
-                  <span className="text-xs text-discord-text-muted">(you)</span>
+                  <span className="text-xs text-gray-400">(you)</span>
                 )}
               </div>
             </li>
@@ -141,34 +141,34 @@ export const UserList: React.FC<UserListProps> = ({
 
       {/* Offline Users */}
       <div className="mb-4">
-        <h3 className="font-semibold mb-2 text-discord-text-muted">
+        <h3 className="font-semibold mb-2 text-gray-600">
           Offline ({offlineUsers.length})
         </h3>
         <ul className="space-y-1">
           {offlineUsers.map((user) => (
             <li
               key={user.id}
-              className={`flex flex-col group cursor-pointer hover:bg-discord-bg-tertiary p-2 rounded ${
-                currentUser?.id === user.id ? 'bg-discord-bg-accent bg-opacity-20' : ''
+              className={`flex flex-col group cursor-pointer hover:bg-gray-50 p-2 rounded ${
+                currentUser?.id === user.id ? 'bg-blue-50' : ''
               }`}
               onClick={() => handleUserClick(user.id)}
             >
               <div className="flex items-center space-x-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-discord-status-offline"></span>
-                <span className="font-medium flex-1 text-discord-text-primary hover:text-discord-text-link">
+                <span className="inline-block w-2 h-2 rounded-full bg-gray-500"></span>
+                <span className="font-medium flex-1 hover:text-blue-600">
                   {user.username}
                 </span>
                 {currentUser?.id !== user.id && (
                   <button
                     onClick={(e) => handleBanClick(user.id, e)}
-                    className="text-discord-status-dnd hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                    className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
                     title="Ban user"
                   >
                     <Ban size={12} />
                   </button>
                 )}
                 {currentUser?.id === user.id && (
-                  <span className="text-xs text-discord-text-muted">(you)</span>
+                  <span className="text-xs text-gray-400">(you)</span>
                 )}
               </div>
             </li>
@@ -179,21 +179,21 @@ export const UserList: React.FC<UserListProps> = ({
       {/* Banned Users */}
       {bannedUsers.length > 0 && (
         <div>
-          <h3 className="font-semibold mb-2 text-discord-status-dnd">
+          <h3 className="font-semibold mb-2 text-red-600">
             Banned ({bannedUsers.length})
           </h3>
           <ul className="space-y-1">
             {bannedUsers.map((user) => (
               <li
                 key={user.id}
-                className="flex items-center space-x-2 p-2 bg-discord-status-dnd bg-opacity-10 rounded cursor-pointer hover:bg-discord-status-dnd hover:bg-opacity-20"
+                className="flex items-center space-x-2 p-2 bg-red-50 rounded cursor-pointer hover:bg-red-100"
                 onClick={() => handleUserClick(user.id)}
               >
-                <span className="inline-block w-2 h-2 rounded-full bg-discord-status-dnd"></span>
-                <span className="font-medium flex-1 text-discord-text-primary">{user.username}</span>
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
+                <span className="font-medium flex-1">{user.username}</span>
                 <button
                   onClick={(e) => handleUnbanClick(user.id, e)}
-                  className="text-discord-text-link hover:text-discord-text-accent text-sm underline"
+                  className="text-blue-500 hover:text-blue-700 text-sm underline"
                   title="Unban user"
                 >
                   Unban

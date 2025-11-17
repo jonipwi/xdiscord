@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Users, Settings, LogOut, Menu, X } from 'lucide-react';
 import { UserList } from './UserList';
 import { RoomList } from './RoomList';
-import ThemeToggle from './ThemeToggle';
 
 interface User {
   id: string;
@@ -61,29 +60,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <div className={`
-        fixed md:static inset-y-0 left-0 z-50 w-80 bg-discord-bg-primary border-r border-discord-border-primary
+        fixed md:static inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         md:translate-x-0
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-discord-border-primary">
-          <h2 className="text-lg font-semibold text-discord-text-primary">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800">
             {currentUser?.username || 'Chat'}
           </h2>
-          <div className="flex items-center space-x-2">
-            <ThemeToggle />
-            <button
-              onClick={onToggle}
-              className="md:hidden p-2 hover:bg-discord-bg-secondary rounded-lg"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <button
+            onClick={onToggle}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Room navigation */}
-        <div className="p-4 border-b border-discord-border-primary">
+        <div className="p-4 border-b border-gray-200">
           <RoomList
             rooms={rooms}
             currentRoom={currentRoom}
@@ -94,13 +90,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Tab navigation */}
-        <div className="flex border-b border-discord-border-primary">
+        <div className="flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab('rooms')}
             className={`flex-1 py-3 px-4 text-center transition-colors ${
               activeTab === 'rooms'
-                ? 'bg-discord-bg-accent text-white border-b-2 border-discord-bg-accent'
-                : 'text-discord-text-secondary hover:bg-discord-bg-secondary'
+                ? 'bg-blue-500 text-white border-b-2 border-blue-500'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             Rooms
@@ -109,8 +105,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setActiveTab('users')}
             className={`flex-1 py-3 px-4 text-center transition-colors ${
               activeTab === 'users'
-                ? 'bg-discord-bg-accent text-white border-b-2 border-discord-bg-accent'
-                : 'text-discord-text-secondary hover:bg-discord-bg-secondary'
+                ? 'bg-blue-500 text-white border-b-2 border-blue-500'
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
             <Users size={16} className="inline mr-1" />
@@ -122,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'rooms' && (
             <div className="p-4">
-              <h3 className="font-semibold text-discord-text-primary mb-3">Available Rooms</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">Available Rooms</h3>
               <div className="space-y-2">
                 {rooms.map((room) => (
                   <button
@@ -130,12 +126,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => onRoomClick(room.id)}
                     className={`w-full text-left p-3 rounded-lg transition-colors ${
                       currentRoom === room.id
-                        ? 'bg-discord-bg-accent text-white'
-                        : 'hover:bg-discord-bg-secondary text-discord-text-primary'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'hover:bg-gray-100 text-gray-700'
                     }`}
                   >
                     <div className="font-medium">{room.name}</div>
-                    <div className="text-sm text-discord-text-muted">#{room.id}</div>
+                    <div className="text-sm text-gray-500">#{room.id}</div>
                   </button>
                 ))}
               </div>
@@ -154,22 +150,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-discord-border-primary p-4">
+        <div className="border-t border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-discord-bg-accent rounded-full flex items-center justify-center text-white font-semibold">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                 {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
               </div>
               <div>
-                <div className="font-medium text-discord-text-primary">{currentUser?.username}</div>
-                <div className="text-sm text-discord-text-muted capitalize">{currentUser?.status}</div>
+                <div className="font-medium text-gray-800">{currentUser?.username}</div>
+                <div className="text-sm text-gray-500 capitalize">{currentUser?.status}</div>
               </div>
             </div>
             <div className="flex items-center space-x-1">
               {onSettings && (
                 <button
                   onClick={onSettings}
-                  className="p-2 text-discord-text-secondary hover:bg-discord-bg-secondary rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Settings"
                 >
                   <Settings size={18} />
@@ -178,7 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="p-2 text-discord-text-secondary hover:bg-discord-bg-secondary rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Logout"
                 >
                   <LogOut size={18} />
@@ -192,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile menu button */}
       <button
         onClick={onToggle}
-        className="md:hidden fixed top-4 left-4 z-30 p-2 bg-discord-bg-primary rounded-lg shadow-lg border border-discord-border-primary"
+        className="md:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-lg border border-gray-200"
       >
         <Menu size={20} />
       </button>

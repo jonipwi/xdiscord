@@ -58,7 +58,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
     switch (message.type) {
       case 'text':
         const textContent = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
-        return <p className="text-black">{textContent}</p>;
+        return <p>{textContent}</p>;
       case 'image':
         if (message.fileURL) {
           debugLog.debug('ChatMessage', 'Rendering image message (URL)', {
@@ -68,9 +68,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
           return (
             <div>
               {typeof message.content === 'string' && message.content && (
-                <p className="mb-2 text-black">{message.content}</p>
+                <p className="mb-2">{message.content}</p>
               )}
-              <img src={message.fileURL} alt={message.fileName || "Uploaded"} className="rounded" style={{ maxWidth: '256px', height: 'auto' }} />
+              <img src={message.fileURL} alt={message.fileName || "Uploaded"} className="max-w-xs rounded" />
             </div>
           );
         } else if (typeof message.content === 'string') {
@@ -80,7 +80,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
           });
           return (
             <div>
-              <img src={message.content} alt={message.fileName || "Uploaded"} className="rounded" style={{ maxWidth: '256px', height: 'auto' }} />
+              <img src={message.content} alt={message.fileName || "Uploaded"} className="max-w-xs rounded" />
             </div>
           );
         } else if (message.content instanceof File || message.content instanceof Blob) {
@@ -92,7 +92,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
           });
           return (
             <div>
-              <img src={imageSrc} alt={message.fileName || "Uploaded"} className="rounded" style={{ maxWidth: '256px', height: 'auto' }} />
+              <img src={imageSrc} alt={message.fileName || "Uploaded"} className="max-w-xs rounded" />
             </div>
           );
         } else {
@@ -146,8 +146,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
             <img
               src={message.content}
               alt="GIF Emoticon"
-              className="rounded"
-              style={{ width: '128px', height: '128px', objectFit: 'cover' }}
+              className="max-w-xs rounded"
               onError={(e) => {
                 // Fallback to text if GIF fails to load
                 const target = e.target as HTMLImageElement;
@@ -187,14 +186,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
           data_points: graphData.length,
         });
         return (
-          <div style={{ width: '300px', maxWidth: '100%', aspectRatio: '16/9' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full min-w-[300px]">
+            <ResponsiveContainer width="100%" height={300}>
               <LineChart data={graphData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#8884d8" />
+                <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={3} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -224,7 +223,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
         });
         return (
           <div className="space-y-2">
-            <p className="font-medium text-black">{poll.question}</p>
+            <p className="font-medium">{poll.question}</p>
             {hasUserVoted && (
               <p className="text-sm text-green-600 font-medium">✓ You have voted</p>
             )}
@@ -263,7 +262,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
           return (
             <div>
               {typeof message.content === 'string' && message.content && (
-                <p className="mb-2 text-black">{message.content}</p>
+                <p className="mb-2">{message.content}</p>
               )}
               <a
                 href={message.fileURL}
@@ -320,13 +319,25 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, selectedIcon,
   };
 
   return (
-    <div>
-      {message.username && (
-        <div className="text-xs font-medium text-black mb-1">
-          {message.username}
+    <div className="flex items-start space-x-2 mb-4">
+      {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1 flex-shrink-0')}
+      <div className="bg-blue-100 p-3 rounded-lg max-w-xs shadow-sm">
+        {message.username && (
+          <div className="text-xs font-medium text-gray-600 mb-1">
+            {message.username}
+          </div>
+        )}
+        {renderMessageContent(message)}
+        <div className="flex items-center justify-between mt-2 text-xs">
+          <span className="text-gray-500">{message.timestamp.toLocaleString()}</span>
+          <span className="text-gray-400">
+            {message.status === 'sending' && 'Sending...'}
+            {message.status === 'sent' && '✓'}
+            {message.status === 'read' && '✓✓'}
+            {message.status === 'unread' && '○'}
+          </span>
         </div>
-      )}
-      {renderMessageContent(message)}
+      </div>
     </div>
   );
 };
