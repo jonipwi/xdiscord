@@ -379,7 +379,7 @@ Created: ${new Date().toISOString()}
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDC Balance</p>
                       <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {wallet.balances.USDC.toFixed(4)} USDC
+                        {wallet.balances.USDC.toFixed(2)} USDC
                       </p>
                     </div>
                     <PieChart size={40} className="text-blue-500" />
