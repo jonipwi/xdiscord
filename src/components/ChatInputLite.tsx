@@ -9,7 +9,7 @@ interface MessageContent {
   [key: string]: unknown;
 }
 
-interface ChatInputProps {
+interface ChatInputLiteProps {
   onSendMessage: (message: string, type: string, content?: MessageContent) => void;
   onSendVoice?: (audioBlob: Blob) => void;
   onSendImage?: (file: File) => void;
@@ -18,7 +18,7 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
+export const ChatInputLite: React.FC<ChatInputLiteProps> = ({
   onSendMessage,
   onSendVoice,
   onSendImage,
@@ -59,14 +59,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
-      debugLog.info('ChatInput', 'Sending text message', {
+      debugLog.info('ChatInputLite', 'Sending text message', {
         message_length: message.trim().length,
         message_preview: message.trim().substring(0, 50),
       });
       onSendMessage(message.trim(), 'text');
       setMessage('');
     } else {
-      debugLog.warn('ChatInput', 'Send attempted but blocked', {
+      debugLog.warn('ChatInputLite', 'Send attempted but blocked', {
         message_empty: !message.trim(),
         component_disabled: disabled,
       });
@@ -75,7 +75,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      debugLog.debug('ChatInput', 'Enter key pressed, sending message');
+      debugLog.debug('ChatInputLite', 'Enter key pressed, sending message');
       e.preventDefault();
       handleSend();
     }
@@ -83,18 +83,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleVoiceRecord = async () => {
     if (isRecording) {
-      debugLog.info('ChatInput', 'Stopping voice recording');
+      debugLog.info('ChatInputLite', 'Stopping voice recording');
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
     } else {
-      debugLog.info('ChatInput', 'Starting voice recording');
+      debugLog.info('ChatInputLite', 'Starting voice recording');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
         const chunks: Blob[] = [];
 
         mediaRecorder.ondataavailable = (e) => {
-          debugLog.debug('ChatInput', 'Voice recording data chunk received', {
+          debugLog.debug('ChatInputLite', 'Voice recording data chunk received', {
             chunk_size: e.data.size,
           });
           chunks.push(e.data);
@@ -102,7 +102,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         mediaRecorder.onstop = () => {
           const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-          debugLog.info('ChatInput', 'Voice recording completed', {
+          debugLog.info('ChatInputLite', 'Voice recording completed', {
             blob_size: audioBlob.size,
             blob_type: audioBlob.type,
             chunks_count: chunks.length,
@@ -115,7 +115,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         mediaRecorder.start();
         setIsRecording(true);
       } catch (error) {
-        debugLog.error('ChatInput', 'Failed to start voice recording', error as Error, {
+        debugLog.error('ChatInputLite', 'Failed to start voice recording', error as Error, {
           error_type: (error as Error).name,
         });
         console.error('Error accessing microphone:', error);
@@ -123,16 +123,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleFileSelect = (type: 'image' | 'file') => {
-    debugLog.debug('ChatInput', 'File selection triggered', { type });
-    const inputRef = type === 'image' ? imageInputRef : fileInputRef;
-    inputRef.current?.click();
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
     const file = e.target.files?.[0];
     if (file) {
-      debugLog.info('ChatInput', 'File selected for upload', {
+      debugLog.info('ChatInputLite', 'File selected for upload', {
         type,
         file_name: file.name,
         file_size: file.size,
@@ -144,19 +138,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onSendFile?.(file);
       }
     } else {
-      debugLog.warn('ChatInput', 'File input change triggered but no file selected', { type });
+      debugLog.warn('ChatInputLite', 'File input change triggered but no file selected', { type });
     }
     e.target.value = '';
   };
 
   const handleEmoticonSelect = (emoticon: string) => {
-    debugLog.info('ChatInput', 'Emoticon selected', { emoticon });
+    debugLog.info('ChatInputLite', 'Emoticon selected', { emoticon });
     onSendMessage(emoticon, 'emoticon');
     setShowEmoticonPicker(false);
   };
 
   const handleGifEmoticonSelect = (gifPath: string) => {
-    debugLog.info('ChatInput', 'GIF emoticon selected', { gifPath });
+    debugLog.info('ChatInputLite', 'GIF emoticon selected', { gifPath });
     onSendMessage(gifPath, 'gif_emoticon');
     setShowEmoticonPicker(false);
   };
@@ -184,7 +178,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleVotingCreate = (question: string, options: string[]) => {
-    debugLog.info('ChatInput', 'Voting poll created', {
+    debugLog.info('ChatInputLite', 'Voting poll created', {
       question,
       options_count: options.length,
       options,
@@ -194,7 +188,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleGraphCreate = (title: string, data: { name: string; value: number }[]) => {
-    debugLog.info('ChatInput', 'Graph created', {
+    debugLog.info('ChatInputLite', 'Graph created', {
       title,
       data_points: data.length,
       data,
@@ -214,7 +208,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div className="border-t bg-white p-4">
-      <div className="flex items-end space-x-2">
+      <div className="flex items-end space-x-3">
         <div className="flex-1 relative">
           <textarea
             value={message}
@@ -222,9 +216,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onKeyPress={handleKeyPress}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+            className="w-full p-4 text-xl border-2 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100"
             rows={1}
-            style={{ minHeight: '44px', maxHeight: '120px' }}
+            style={{ minHeight: '64px', maxHeight: '120px' }}
           />
 
           {/* Hidden file inputs */}
@@ -243,97 +237,97 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           />
         </div>
 
-        <div className="flex items-center space-x-1">
-          {/* Voice recording */}
+        <div className="flex items-center space-x-2">
+          {/* Voice recording - Large button for elderly */}
           <button
             onClick={handleVoiceRecord}
             disabled={disabled}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-4 rounded-xl transition-colors ${
               isRecording
                 ? 'bg-red-500 text-white animate-pulse'
-                : 'text-gray-500 hover:bg-gray-100'
+                : 'text-gray-600 hover:bg-gray-100 border-2 border-gray-300'
             } disabled:opacity-50`}
             title={isRecording ? 'Stop recording' : 'Record voice'}
           >
-            <Mic size={20} />
+            <Mic size={32} />
           </button>
 
-          {/* Attachment menu button */}
+          {/* Attachment menu button - Large button for elderly */}
           <div className="relative attachment-menu">
             <button
               onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
               disabled={disabled}
-              className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+              className="p-4 text-gray-600 hover:bg-gray-100 border-2 border-gray-300 rounded-xl transition-colors disabled:opacity-50"
               title="Add attachment"
             >
-              <Paperclip size={20} />
+              <Paperclip size={32} />
             </button>
 
-            {/* Attachment menu popup */}
+            {/* Attachment menu popup - Larger for elderly */}
             {showAttachmentMenu && (
-              <div className="absolute bottom-full mb-2 right-0 bg-white border rounded-lg shadow-lg py-2 w-48 z-10">
+              <div className="absolute bottom-full mb-2 right-0 bg-white border-2 rounded-xl shadow-xl py-2 w-64 z-10">
                 <button
                   onClick={() => handleAttachmentMenuClick('image')}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                  className="w-full px-6 py-4 text-left hover:bg-gray-100 flex items-center space-x-4 text-lg"
                 >
-                  <ImageIcon size={18} className="text-blue-500" />
-                  <span>Image</span>
+                  <ImageIcon size={28} className="text-blue-500" />
+                  <span className="font-medium">Image</span>
                 </button>
                 <button
                   onClick={() => handleAttachmentMenuClick('file')}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                  className="w-full px-6 py-4 text-left hover:bg-gray-100 flex items-center space-x-4 text-lg"
                 >
-                  <FileText size={18} className="text-gray-500" />
-                  <span>File</span>
+                  <FileText size={28} className="text-gray-500" />
+                  <span className="font-medium">File</span>
                 </button>
                 <button
                   onClick={() => handleAttachmentMenuClick('emoticon')}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                  className="w-full px-6 py-4 text-left hover:bg-gray-100 flex items-center space-x-4 text-lg"
                 >
-                  <Smile size={18} className="text-yellow-500" />
-                  <span>Emoticon</span>
+                  <Smile size={28} className="text-yellow-500" />
+                  <span className="font-medium">Emoticon</span>
                 </button>
                 <button
                   onClick={() => handleAttachmentMenuClick('voting')}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                  className="w-full px-6 py-4 text-left hover:bg-gray-100 flex items-center space-x-4 text-lg"
                 >
-                  <Vote size={18} className="text-purple-500" />
-                  <span>Voting Poll</span>
+                  <Vote size={28} className="text-purple-500" />
+                  <span className="font-medium">Voting Poll</span>
                 </button>
                 <button
                   onClick={() => handleAttachmentMenuClick('graph')}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center space-x-3"
+                  className="w-full px-6 py-4 text-left hover:bg-gray-100 flex items-center space-x-4 text-lg"
                 >
-                  <BarChart3 size={18} className="text-green-500" />
-                  <span>Graph/Chart</span>
+                  <BarChart3 size={28} className="text-green-500" />
+                  <span className="font-medium">Graph/Chart</span>
                 </button>
               </div>
             )}
           </div>
 
-          {/* Send button */}
+          {/* Send button - Large button for elderly */}
           <button
             onClick={handleSend}
             disabled={!message.trim() || disabled}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-4 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send size={20} />
+            <Send size={32} />
           </button>
         </div>
       </div>
 
-      {/* Emoticon picker popup */}
+      {/* Emoticon picker popup - Larger for elderly */}
       {showEmoticonPicker && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
-          <div className="bg-white border rounded-lg shadow-lg p-4 w-80 max-w-sm pointer-events-auto emoticon-picker">
-            <div className="mb-4">
-              <h4 className="font-semibold mb-2">Emoji</h4>
-              <div className="grid grid-cols-5 gap-1">
+          <div className="bg-white border-2 rounded-xl shadow-xl p-6 w-96 max-w-sm pointer-events-auto emoticon-picker">
+            <div className="mb-6">
+              <h4 className="font-semibold text-2xl mb-4">Emoji</h4>
+              <div className="grid grid-cols-5 gap-2">
                 {emoticons.map((emoticon) => (
                   <button
                     key={emoticon}
                     onClick={() => handleEmoticonSelect(emoticon)}
-                    className="p-2 hover:bg-gray-100 rounded text-xl"
+                    className="p-3 hover:bg-gray-100 rounded-lg text-4xl"
                   >
                     {emoticon}
                   </button>
@@ -341,27 +335,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </div>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">GIF Emoticons</h4>
-              <div className="grid grid-cols-4 gap-2">
+              <h4 className="font-semibold text-2xl mb-4">GIF Emoticons</h4>
+              <div className="grid grid-cols-4 gap-3">
                 {gifEmoticons.map((gif) => (
                   <button
                     key={gif.name}
                     onClick={() => handleGifEmoticonSelect(gif.path)}
-                    className="p-2 hover:bg-gray-100 rounded border"
+                    className="p-3 hover:bg-gray-100 rounded-lg border-2"
                     title={gif.name}
                   >
                     <img
                       src={gif.path}
                       alt={gif.name}
-                      className="w-8 h-8 object-contain"
+                      className="w-12 h-12 object-contain"
                       onError={(e) => {
-                        // Fallback to text if GIF fails to load
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         const parent = target.parentElement;
                         if (parent) {
                           parent.textContent = gif.name;
-                          parent.className = 'p-2 hover:bg-gray-100 rounded border text-xs text-center';
+                          parent.className = 'p-3 hover:bg-gray-100 rounded-lg border-2 text-sm text-center';
                         }
                       }}
                     />
@@ -369,6 +362,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 ))}
               </div>
             </div>
+            <button
+              onClick={() => setShowEmoticonPicker(false)}
+              className="mt-6 w-full py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-lg font-medium"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -422,16 +421,16 @@ const VotingCreator: React.FC<VotingCreatorProps> = ({ onCreate, onClose }) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg shadow-lg p-4 w-80 max-w-sm pointer-events-auto voting-creator">
-      <h3 className="font-semibold mb-3">Create Voting</h3>
+    <div className="bg-white border-2 rounded-xl shadow-xl p-6 w-96 max-w-md pointer-events-auto voting-creator">
+      <h3 className="font-semibold text-2xl mb-4">Create Voting</h3>
       <input
         type="text"
         placeholder="Question"
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
-        className="w-full p-2 border rounded mb-3"
+        className="w-full p-4 text-lg border-2 rounded-lg mb-4"
       />
-      <div className="space-y-2 mb-3">
+      <div className="space-y-3 mb-4">
         {options.map((option, index) => (
           <div key={index} className="flex items-center space-x-2">
             <input
@@ -439,12 +438,12 @@ const VotingCreator: React.FC<VotingCreatorProps> = ({ onCreate, onClose }) => {
               placeholder={`Option ${index + 1}`}
               value={option}
               onChange={(e) => updateOption(index, e.target.value)}
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-4 text-lg border-2 rounded-lg"
             />
             {options.length > 2 && (
               <button
                 onClick={() => removeOption(index)}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 text-3xl font-bold px-3"
               >
                 ×
               </button>
@@ -455,21 +454,21 @@ const VotingCreator: React.FC<VotingCreatorProps> = ({ onCreate, onClose }) => {
       <div className="flex justify-between">
         <button
           onClick={addOption}
-          className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          className="px-5 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-lg font-medium"
         >
           Add Option
         </button>
-        <div className="space-x-2">
+        <div className="space-x-3">
           <button
             onClick={onClose}
-            className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            className="px-5 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-lg font-medium"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
             disabled={!question.trim() || options.filter(opt => opt.trim()).length < 2}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-5 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 text-lg font-medium"
           >
             Create
           </button>
@@ -582,20 +581,20 @@ const GraphCreator: React.FC<GraphCreatorProps> = ({ onCreate, onClose }) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg shadow-lg p-4 w-96 max-w-md pointer-events-auto graph-creator">
-      <h3 className="font-semibold mb-3">Create Graph</h3>
+    <div className="bg-white border-2 rounded-xl shadow-xl p-6 w-[450px] max-w-md pointer-events-auto graph-creator">
+      <h3 className="font-semibold text-2xl mb-4">Create Graph</h3>
 
-      {/* Input mode selector */}
-      <div className="flex mb-3 space-x-2">
+      {/* Input mode selector - Larger for elderly */}
+      <div className="flex mb-4 space-x-3">
         <button
           onClick={() => setInputMode('manual')}
-          className={`px-3 py-1 rounded ${inputMode === 'manual' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          className={`px-5 py-3 rounded-lg text-lg font-medium ${inputMode === 'manual' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
         >
           Manual Input
         </button>
         <button
           onClick={() => setInputMode('file')}
-          className={`px-3 py-1 rounded ${inputMode === 'file' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          className={`px-5 py-3 rounded-lg text-lg font-medium ${inputMode === 'file' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
         >
           Upload File
         </button>
@@ -606,12 +605,12 @@ const GraphCreator: React.FC<GraphCreatorProps> = ({ onCreate, onClose }) => {
         placeholder="Graph Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full p-2 border rounded mb-3"
+        className="w-full p-4 text-lg border-2 rounded-lg mb-4"
       />
 
       {inputMode === 'manual' ? (
         <>
-          <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
+          <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
             {dataPoints.map((point, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <input
@@ -619,19 +618,19 @@ const GraphCreator: React.FC<GraphCreatorProps> = ({ onCreate, onClose }) => {
                   placeholder="Label"
                   value={point.name}
                   onChange={(e) => updateDataPoint(index, 'name', e.target.value)}
-                  className="flex-1 p-2 border rounded"
+                  className="flex-1 p-3 text-lg border-2 rounded-lg"
                 />
                 <input
                   type="number"
                   placeholder="Value"
                   value={point.value}
                   onChange={(e) => updateDataPoint(index, 'value', parseFloat(e.target.value) || 0)}
-                  className="w-20 p-2 border rounded"
+                  className="w-24 p-3 text-lg border-2 rounded-lg"
                 />
                 {dataPoints.length > 1 && (
                   <button
                     onClick={() => removeDataPoint(index)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 text-3xl font-bold px-2"
                   >
                     ×
                   </button>
@@ -639,41 +638,41 @@ const GraphCreator: React.FC<GraphCreatorProps> = ({ onCreate, onClose }) => {
               </div>
             ))}
           </div>
-          <div className="flex justify-between mb-3">
+          <div className="flex justify-between mb-4">
             <button
               onClick={addDataPoint}
-              className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              className="px-5 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-lg font-medium"
             >
               Add Point
             </button>
           </div>
         </>
       ) : (
-        <div className="mb-3">
+        <div className="mb-4">
           <input
             ref={fileInputRef}
             type="file"
             accept=".csv,.xlsx,.xls"
             onChange={handleFileUpload}
-            className="w-full p-2 border rounded"
+            className="w-full p-3 text-lg border-2 rounded-lg"
           />
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-base text-gray-600 mt-2">
             Upload a CSV or Excel file with &quot;name&quot; and &quot;value&quot; columns
           </p>
         </div>
       )}
 
-      <div className="flex justify-end space-x-2">
+      <div className="flex justify-end space-x-3">
         <button
           onClick={onClose}
-          className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          className="px-5 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-lg font-medium"
         >
           Cancel
         </button>
         <button
           onClick={handleCreate}
           disabled={!title.trim() || dataPoints.filter(point => point.name.trim()).length < 1}
-          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          className="px-5 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 text-lg font-medium"
         >
           Create
         </button>

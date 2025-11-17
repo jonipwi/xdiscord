@@ -54,20 +54,20 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Modal */}
-      <div className={`relative bg-discord-bg-secondary rounded-lg shadow-xl border border-discord-border-primary ${sizeClasses[size]} w-full mx-4 max-h-[90vh] overflow-hidden`}>
+      <div className={`relative bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full mx-4 max-h-[90vh] overflow-hidden`}>
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b border-discord-border-primary">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
             {title && (
-              <h3 className="text-lg font-semibold text-discord-text-primary">{title}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-1 hover:bg-discord-bg-tertiary rounded-lg transition-colors"
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Close"
               >
-                <X size={20} className="text-discord-text-secondary" />
+                <X size={20} className="text-gray-500" />
               </button>
             )}
           </div>
@@ -118,11 +118,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-4">
-        <p className="text-discord-text-primary">{message}</p>
+        <p className="text-gray-700">{message}</p>
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-discord-text-primary bg-discord-bg-tertiary hover:bg-discord-bg-accent hover:bg-opacity-20 rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             {cancelText}
           </button>
@@ -181,21 +181,21 @@ export const InputModal: React.FC<InputModalProps> = ({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-3 py-2 border border-discord-border-secondary rounded-lg bg-discord-bg-primary text-discord-text-primary placeholder-discord-text-muted focus:outline-none focus:ring-2 focus:ring-discord-bg-accent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           autoFocus
         />
         <div className="flex justify-end space-x-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-discord-text-primary bg-discord-bg-tertiary hover:bg-discord-bg-accent hover:bg-opacity-20 rounded-lg transition-colors"
+            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!value.trim()}
-            className="px-4 py-2 bg-discord-bg-accent text-white rounded-lg hover:bg-discord-bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitText}
           </button>

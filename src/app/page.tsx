@@ -13,8 +13,7 @@ import {
   Sidebar,
   Modal,
   ConfirmModal,
-  InputModal,
-  ThemeToggle
+  InputModal
 } from '../components';
 
 // Import API service
@@ -160,16 +159,6 @@ export default function Home() {
   const [isHydrated, setIsHydrated] = useState(false);
   const hasInitiatedConnectionRef = useRef(false);
   const hasFetchedInitialDataRef = useRef(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to bottom when messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, currentRoom]);
 
   // WebSocket connection management - moved outside useEffect
   const connectWebSocket = useCallback(() => {
@@ -1240,8 +1229,8 @@ export default function Home() {
   return (
     <>
       {isHydrated && isModalMode ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
-          <div className={`rounded-lg shadow-xl overflow-hidden transition-all duration-300 ${
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className={`bg-white rounded-lg shadow-xl overflow-hidden transition-all duration-300 ${
             isModalMaximized
               ? 'w-full h-full rounded-none'
               : 'w-11/12 h-5/6 max-w-6xl'
@@ -1270,41 +1259,36 @@ export default function Home() {
             )}
             {/* Modal Content */}
             <div className="h-full">
-              <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-discord-bg-primary`}>
+              <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-gray-100`}>
                 {/* Sidebar - collapsible in embedded mode */}
                 {(!compactMode || !sidebarCollapsed) && (
-                  <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-discord-bg-secondary shadow-md flex flex-col transition-all duration-300 border-r border-discord-border-primary`}>
+                  <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-white shadow-md flex flex-col transition-all duration-300`}>
                     {/* Sidebar Header */}
-                    <div className="p-4 border-b border-discord-border-primary">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {renderIcon(selectedIcon, 32)}
-                          <div className="flex-1">
-                            <p className="font-semibold text-discord-text-primary">{username}</p>
-                            <select
-                              value={selectedIcon}
-                              onChange={(e) => setSelectedIcon(e.target.value)}
-                              className="text-sm text-discord-text-muted bg-transparent border-none outline-none cursor-pointer"
-                            >
-                              {availableIcons.map(icon => (
-                                <option key={icon.name} value={icon.name}>
-                                  {icon.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                    <div className="p-4 border-b">
+                      <div className="flex items-center space-x-3">
+                        {renderIcon(selectedIcon, 32)}
+                        <div className="flex-1">
+                          <p className="font-semibold">{username}</p>
+                          <select
+                            value={selectedIcon}
+                            onChange={(e) => setSelectedIcon(e.target.value)}
+                            className="text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer"
+                          >
+                            {availableIcons.map(icon => (
+                              <option key={icon.name} value={icon.name}>
+                                {icon.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <ThemeToggle />
-                          {isEmbedded && (
-                            <button
-                              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
-                            </button>
-                          )}
-                        </div>
+                        {isEmbedded && (
+                          <button
+                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                          >
+                            <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
+                          </button>
+                        )}
                       </div>
                       <button onClick={handleLogout} className="mt-4 w-full bg-red-500 text-white py-2 rounded flex items-center justify-center space-x-2">
                         <LogOut size={16} />
@@ -1421,15 +1405,15 @@ export default function Home() {
                     />
 
                     {/* Invite Section */}
-                    <div className="p-4 border-t border-discord-border-primary">
+                    <div className="p-4 border-t">
                       <input
                         type="text"
                         placeholder="Email or Username"
-                        className="w-full p-2 border border-discord-border-secondary rounded bg-black text-white placeholder-gray-400"
+                        className="w-full p-2 border rounded"
                         value={inviteInput}
                         onChange={(e) => setInviteInput(e.target.value)}
                       />
-                      <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-all duration-200">
+                      <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded">
                         Invite User
                       </button>
                     </div>
@@ -1439,11 +1423,11 @@ export default function Home() {
                 {/* Chat Container */}
                 <div className="flex-1 flex flex-col">
                   {/* Header with Rooms */}
-                  <header className={`bg-discord-bg-secondary shadow-sm border-b border-discord-border-primary ${compactMode ? 'p-2' : 'p-4'}`}>
+                  <header className={`bg-white shadow-sm ${compactMode ? 'p-2' : 'p-4'}`}>
                     <div className="flex items-center space-x-4 overflow-x-auto">
                       <button
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="p-2 hover:bg-discord-bg-tertiary rounded-lg text-discord-text-primary shrink-0"
+                        className="p-2 hover:bg-gray-100 rounded-lg"
                         title={sidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
                       >
                         <Menu size={20} />
@@ -1456,11 +1440,11 @@ export default function Home() {
                         compactMode={compactMode}
                       />
                       {selectedUserFilter && (
-                        <div className="flex items-center space-x-2 bg-discord-bg-tertiary px-3 py-1 rounded-lg border border-discord-border-secondary">
-                          <span className="text-sm text-discord-text-primary">Filtering by: {selectedUserFilter}</span>
+                        <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-lg">
+                          <span className="text-sm text-blue-700">Filtering by: {selectedUserFilter}</span>
                           <button
                             onClick={() => setSelectedUserFilter(null)}
-                            className="text-discord-text-accent hover:text-discord-bg-accent-hover"
+                            className="text-blue-500 hover:text-blue-700"
                             title="Clear filter"
                           >
                             <X size={14} />
@@ -1473,42 +1457,38 @@ export default function Home() {
                   {/* Chat Area */}
                   <main className="flex-1 overflow-y-auto p-4">
                     <div className="mb-4">
-                      <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                      <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded">
                         Load Chat History
                       </button>
                     </div>
                     <div className="space-y-2">
                       {(messages[currentRoom] || [])
                         .filter(message => !selectedUserFilter || message.username === selectedUserFilter)
-                        .map(message => {
-                          const isOwnMessage = message.username === username || !message.username;
-                          return (
-                            <div key={message.id} className={`flex items-start space-x-2 min-w-0 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                              {renderIcon(selectedIcon, 24, 'text-discord-text-muted mt-1 flex-shrink-0')}
-                              <div className="bg-green-200 bg-opacity-50 p-3 rounded-lg shadow-sm border border-discord-border-secondary text-white max-w-[90%] min-w-0 overflow-x-auto">
-                                <ChatMessage message={message} selectedIcon={selectedIcon} renderIcon={renderIcon} onVote={handleVote} currentUsername={username} />
-                                <div className="flex items-center justify-between mt-1">
-                                  <p className="text-xs text-black">{message.timestamp.toLocaleString()}</p>
-                                  <span className="text-xs text-black">
-                                    {message.status === 'sending' && 'Sending...'}
-                                    {message.status === 'sent' && '✓'}
-                                    {message.status === 'read' && '✓✓'}
-                                    {message.status === 'unread' && '○'}
-                                  </span>
-                                </div>
-                              </div>
+                        .map(message => (
+                        <div key={message.id} className="flex items-start space-x-2">
+                          {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                          <div className="bg-blue-100 p-3 rounded-lg max-w-xs shadow-sm">
+                            <ChatMessage message={message} selectedIcon={selectedIcon} renderIcon={renderIcon} onVote={handleVote} currentUsername={username} />
+                            <div className="flex items-center justify-between mt-1">
+                              <p className="text-xs text-gray-500">{message.timestamp.toLocaleString()}</p>
+                              <span className="text-xs text-gray-400">
+                                {message.status === 'sending' && 'Sending...'}
+                                {message.status === 'sent' && '✓'}
+                                {message.status === 'read' && '✓✓'}
+                                {message.status === 'unread' && '○'}
+                              </span>
                             </div>
-                          );
-                        })}
+                          </div>
+                        </div>
+                      ))}
                       {isTyping && (
                         <div className="flex items-start space-x-2">
-                          {renderIcon(selectedIcon, 24, 'text-discord-text-muted mt-1')}
-                          <div className="bg-discord-bg-tertiary p-3 rounded-lg">
-                            <p className="text-sm text-black italic">Someone is typing...</p>
+                          {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                          <div className="bg-gray-100 p-3 rounded-lg">
+                            <p className="text-sm text-gray-500 italic">Someone is typing...</p>
                           </div>
                         </div>
                       )}
-                      <div ref={messagesEndRef} />
                     </div>
                   </main>
 
@@ -1526,41 +1506,36 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-discord-bg-primary`}>
+        <div className={`flex ${compactMode ? 'h-full' : 'h-screen'} bg-gray-100`}>
           {/* Sidebar - collapsible in embedded mode */}
           {(!compactMode || !sidebarCollapsed) && (
-            <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-discord-bg-secondary shadow-md flex flex-col transition-all duration-300 border-r border-discord-border-primary`}>
+            <aside className={`${compactMode ? 'w-48' : 'w-64'} bg-white shadow-md flex flex-col transition-all duration-300`}>
               {/* Sidebar Header */}
-              <div className="p-4 border-b border-discord-border-primary">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {renderIcon(selectedIcon, 32)}
-                    <div className="flex-1">
-                      <p className="font-semibold text-discord-text-primary">{username}</p>
-                      <select
-                        value={selectedIcon}
-                        onChange={(e) => setSelectedIcon(e.target.value)}
-                        className="text-sm text-discord-text-muted bg-transparent border-none outline-none cursor-pointer"
-                      >
-                        {availableIcons.map(icon => (
-                          <option key={icon.name} value={icon.name}>
-                            {icon.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              <div className="p-4 border-b">
+                <div className="flex items-center space-x-3">
+                  {renderIcon(selectedIcon, 32)}
+                  <div className="flex-1">
+                    <p className="font-semibold">{username}</p>
+                    <select
+                      value={selectedIcon}
+                      onChange={(e) => setSelectedIcon(e.target.value)}
+                      className="text-sm text-gray-500 bg-transparent border-none outline-none cursor-pointer"
+                    >
+                      {availableIcons.map(icon => (
+                        <option key={icon.name} value={icon.name}>
+                          {icon.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <ThemeToggle />
-                    {isEmbedded && (
-                      <button
-                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="p-1 hover:bg-gray-100 rounded"
-                      >
-                        <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
-                      </button>
-                    )}
-                  </div>
+                  {isEmbedded && (
+                    <button
+                      onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Plus size={16} className={`transform ${sidebarCollapsed ? 'rotate-45' : 'rotate-0'} transition-transform`} />
+                    </button>
+                  )}
                 </div>
                 <button onClick={handleLogout} className="mt-4 w-full bg-red-500 text-white py-2 rounded flex items-center justify-center space-x-2">
                   <LogOut size={16} />
@@ -1677,15 +1652,15 @@ export default function Home() {
               />
 
               {/* Invite Section */}
-              <div className="p-4 border-t border-discord-border-primary">
+              <div className="p-4 border-t">
                 <input
                   type="text"
                   placeholder="Email or Username"
-                  className="w-full p-2 border border-discord-border-secondary rounded bg-black text-white placeholder-gray-400"
+                  className="w-full p-2 border rounded"
                   value={inviteInput}
                   onChange={(e) => setInviteInput(e.target.value)}
                 />
-                <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-all duration-200">
+                <button onClick={handleInvite} className="mt-2 w-full bg-blue-500 text-white py-2 rounded">
                   Invite User
                 </button>
               </div>
@@ -1695,11 +1670,11 @@ export default function Home() {
           {/* Chat Container */}
           <div className="flex-1 flex flex-col">
                   {/* Header with Rooms */}
-                  <header className={`bg-discord-bg-secondary shadow-sm border-b border-discord-border-primary ${compactMode ? 'p-2' : 'p-4'}`}>
+                  <header className={`bg-white shadow-sm ${compactMode ? 'p-2' : 'p-4'}`}>
                     <div className="flex items-center space-x-4 overflow-x-auto">
                       <button
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="p-2 hover:bg-discord-bg-tertiary rounded-lg text-discord-text-primary shrink-0"
+                        className="p-2 hover:bg-gray-100 rounded-lg"
                         title={sidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
                       >
                         <Menu size={20} />
@@ -1712,11 +1687,11 @@ export default function Home() {
                         compactMode={compactMode}
                       />
                       {selectedUserFilter && (
-                        <div className="flex items-center space-x-2 bg-discord-bg-tertiary px-3 py-1 rounded-lg border border-discord-border-secondary">
-                          <span className="text-sm text-discord-text-primary">Filtering by: {selectedUserFilter}</span>
+                        <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1 rounded-lg">
+                          <span className="text-sm text-blue-700">Filtering by: {selectedUserFilter}</span>
                           <button
                             onClick={() => setSelectedUserFilter(null)}
-                            className="text-discord-text-accent hover:text-discord-bg-accent-hover"
+                            className="text-blue-500 hover:text-blue-700"
                             title="Clear filter"
                           >
                             <X size={14} />
@@ -1727,42 +1702,38 @@ export default function Home() {
                   </header>            {/* Chat Area */}
             <main className="flex-1 overflow-y-auto p-4">
               <div className="mb-4">
-                <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                <button onClick={loadChatHistory} className="bg-blue-500 text-white px-4 py-2 rounded">
                   Load Chat History
                 </button>
               </div>
               <div className="space-y-2">
                 {(messages[currentRoom] || [])
                   .filter(message => !selectedUserFilter || message.username === selectedUserFilter)
-                  .map(message => {
-                    const isOwnMessage = message.username === username || !message.username;
-                    return (
-                      <div key={message.id} className={`flex items-start space-x-2 min-w-0 ${isOwnMessage ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        {renderIcon(selectedIcon, 24, 'text-discord-text-muted mt-1 flex-shrink-0')}
-                        <div className="bg-green-200 bg-opacity-50 p-3 rounded-lg shadow-sm border border-discord-border-secondary text-white flex-1 min-w-0 overflow-x-auto">
-                          <ChatMessage message={message} selectedIcon={selectedIcon} renderIcon={renderIcon} onVote={handleVote} currentUsername={username} />
-                          <div className="flex items-center justify-between mt-1">
-                            <p className="text-xs text-black">{message.timestamp.toLocaleString()}</p>
-                            <span className="text-xs text-black">
-                              {message.status === 'sending' && 'Sending...'}
-                              {message.status === 'sent' && '✓'}
-                              {message.status === 'read' && '✓✓'}
-                              {message.status === 'unread' && '○'}
-                            </span>
-                          </div>
-                        </div>
+                  .map(message => (
+                  <div key={message.id} className="flex items-start space-x-2">
+                    {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                    <div className="bg-blue-100 p-3 rounded-lg max-w-xs shadow-sm">
+                      <ChatMessage message={message} selectedIcon={selectedIcon} renderIcon={renderIcon} onVote={handleVote} currentUsername={username} />
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-gray-500">{message.timestamp.toLocaleString()}</p>
+                        <span className="text-xs text-gray-400">
+                          {message.status === 'sending' && 'Sending...'}
+                          {message.status === 'sent' && '✓'}
+                          {message.status === 'read' && '✓✓'}
+                          {message.status === 'unread' && '○'}
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+                ))}
                 {isTyping && (
                   <div className="flex items-start space-x-2">
-                    {renderIcon(selectedIcon, 24, 'text-discord-text-muted mt-1')}
-                    <div className="bg-discord-bg-tertiary p-3 rounded-lg">
-                      <p className="text-sm text-black italic">Someone is typing...</p>
+                    {renderIcon(selectedIcon, 24, 'text-gray-500 mt-1')}
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                      <p className="text-sm text-gray-500 italic">Someone is typing...</p>
                     </div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
               </div>
             </main>
 

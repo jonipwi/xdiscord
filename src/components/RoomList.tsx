@@ -94,12 +94,12 @@ export const RoomList: React.FC<RoomListProps> = ({
       <div className="flex items-center space-x-2">
         <button
           onClick={() => handleRoomClick('general')}
-          className="p-2 hover:bg-discord-bg-tertiary rounded-lg text-discord-text-primary"
+          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
           title="Back to General"
         >
           ← Back
         </button>
-        <div className="flex items-center space-x-2 p-2 bg-discord-bg-accent text-white rounded-lg">
+        <div className="flex items-center space-x-2 p-2 bg-blue-500 text-white rounded-lg">
           <Users size={20} />
           <span>{currentRoom.replace('private-', '')}</span>
         </div>
@@ -113,25 +113,23 @@ export const RoomList: React.FC<RoomListProps> = ({
   });
 
   return (
-    <div className="flex items-center space-x-4">
+    <div className="flex items-center space-x-4 overflow-x-auto">
       {rooms.map((room) => (
         <button
           key={room.id}
           onClick={() => handleRoomClick(room.id)}
-          className={`p-2 rounded-lg hover:bg-discord-bg-tertiary transition-all duration-200 shrink-0 ${
-            currentRoom === room.id 
-              ? 'bg-blue-500 text-white border-2 border-blue-500' 
-              : 'text-discord-text-primary border-2 border-transparent'
+          className={`p-2 rounded-lg hover:bg-gray-100 transition-colors shrink-0 ${
+            currentRoom === room.id ? 'bg-blue-500 text-white' : 'text-gray-600'
           }`}
           title={room.name}
         >
-          {renderRoomIcon(room.id, 20, currentRoom === room.id ? 'text-white' : 'text-discord-text-primary')}
+          {renderRoomIcon(room.id, 20, currentRoom === room.id ? 'text-white' : 'text-gray-600')}
         </button>
       ))}
       {!compactMode && onAddRoom && (
         <button
           onClick={handleAddRoom}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shrink-0 hover:bg-blue-600 transition-colors"
+          className="px-4 py-2 bg-green-500 text-white rounded-lg shrink-0 hover:bg-green-600 transition-colors"
         >
           <Plus size={16} />
         </button>
