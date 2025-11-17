@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { ArrowLeft, Camera, Sun, Moon, Wallet, TrendingUp, PieChart } from 'lucide-react';
+import { ArrowLeft, Camera, Sun, Moon, Wallet, TrendingUp, PieChart, Download } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8088'}/api`;
@@ -137,13 +137,19 @@ function SettingsContent() {
         setWallet(newWallet);
         localStorage.setItem('wallet', JSON.stringify(newWallet));
         
+        // Save secret phrase to localStorage (encrypted in production)
+        if (data.data.secretPhrase) {
+          localStorage.setItem(`wallet_phrase_${data.data.address}`, data.data.secretPhrase);
+        }
+        
         // Show secret phrase to user (only shown once during creation)
         if (data.data.secretPhrase) {
           alert(
             `Wallet Created Successfully!\n\n` +
             `IMPORTANT: Save your secret phrase securely!\n\n` +
             `Secret Phrase:\n${data.data.secretPhrase}\n\n` +
-            `This will NEVER be shown again. Write it down and keep it safe!`
+            `This will NEVER be shown again. Write it down and keep it safe!\n\n` +
+            `Use the "Download Wallet Details" button to save this information.`
           );
         }
       } else {
@@ -161,21 +167,69 @@ function SettingsContent() {
     if (!wallet) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/wallet/balance?address=${wallet.address}`);
+      console.log('[Wallet] Refreshing balances for address:', wallet.address);
+      const balanceURL = `${API_BASE_URL}/wallet/balance?address=${wallet.address}`;
+      console.log('[Wallet] Balance API URL:', balanceURL);
+      
+      const response = await fetch(balanceURL);
+      console.log('[Wallet] Balance API response status:', response.status);
+      
       const data = await response.json();
+      console.log('[Wallet] Balance API response data:', data);
       
       if (data.success && data.data) {
+        console.log('[Wallet] Updated balances:', data.data);
         const updatedWallet = {
           ...wallet,
           balances: data.data // API returns WalletBalance directly in data
         };
         setWallet(updatedWallet);
         localStorage.setItem('wallet', JSON.stringify(updatedWallet));
+        console.log('[Wallet] Balances updated successfully');
+      } else {
+        console.warn('[Wallet] API returned success=false or no data');
       }
     } catch (error) {
-      console.error('Failed to refresh balances:', error);
+      console.error('[Wallet] Failed to refresh balances:', error);
       alert('Failed to refresh balances. Please try again.');
     }
+  };
+
+  const downloadWalletDetails = () => {
+    if (!wallet) return;
+
+    // Get secret phrase from localStorage (if available)
+    const secretPhrase = localStorage.getItem(`wallet_phrase_${wallet.address}`) || 'Secret phrase not available (only shown once during creation)';
+
+    const walletDetails = `XCHAT WALLET DETAILS
+========================
+
+Username: ${username}
+Wallet Address: ${wallet.address}
+Network: Solana
+
+Secret Phrase (BIP39 Mnemonic):
+${secretPhrase}
+
+IMPORTANT SECURITY NOTES:
+- Never share your secret phrase with anyone
+- Store this file in a secure location
+- Delete this file after backing up to a secure location
+- Anyone with access to your secret phrase can access your funds
+
+Created: ${new Date().toISOString()}
+`;
+
+    // Create blob and download
+    const blob = new Blob([walletDetails], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `xchat-wallet-${wallet.address.substring(0, 8)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -333,13 +387,22 @@ function SettingsContent() {
                 </div>
               </div>
 
-              {/* Refresh Button */}
-              <button
-                onClick={refreshWalletBalances}
-                className="w-full py-4 px-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 text-xl font-semibold"
-              >
-                Refresh All Balances
-              </button>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={refreshWalletBalances}
+                  className="py-4 px-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 text-xl font-semibold"
+                >
+                  Refresh Balances
+                </button>
+                <button
+                  onClick={downloadWalletDetails}
+                  className="py-4 px-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 text-xl font-semibold flex items-center justify-center gap-2"
+                >
+                  <Download size={24} />
+                  Download Details
+                </button>
+              </div>
             </>
           ) : (
             <>
