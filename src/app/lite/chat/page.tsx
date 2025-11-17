@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChatInputLite, ChatMessage } from '../../../components';
+import { useLanguage } from '@/utils/LanguageContext';
 
 // Environment-based configuration
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8088'}/api`;
@@ -28,6 +29,7 @@ interface Message {
 function ChatRoomContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<Message[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -350,7 +352,7 @@ function ChatRoomContent() {
                   {chatName.charAt(0).toUpperCase() + chatName.slice(1)}
                 </h1>
                 <p className="text-base text-gray-500">
-                  {isGroupChat ? 'Group Chat' : 'Online'}
+                  {isGroupChat ? t.members : t.online}
                 </p>
               </div>
             </div>

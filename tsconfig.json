@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "src/app/page.tsx.backup"  ],
+, "src/app/page.tsx.backup", "src/app/lite/settings/page.tsx.backup"  ],
   "exclude": ["node_modules"]
 }
