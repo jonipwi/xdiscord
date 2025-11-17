@@ -366,7 +366,7 @@ Created: ${new Date().toISOString()}
                     <div>
                       <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDT Balance</p>
                       <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                        {wallet.balances.USDT.toFixed(4)} USDT
+                        {wallet.balances.USDT.toFixed(2)} USDT
                       </p>
                     </div>
                     <TrendingUp size={40} className="text-green-500" />
