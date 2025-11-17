@@ -347,19 +347,6 @@ Created: ${new Date().toISOString()}
 
               {/* Balances Grid */}
               <div className="grid grid-cols-1 gap-4 mb-6">
-                {/* SOL Balance 
-                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">SOL Balance</p>
-                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                        {wallet.balances.SOL.toFixed(4)} SOL
-                      </p>
-                    </div>
-                    <Wallet size={40} className="text-purple-500" />
-                  </div>
-                </div> */}
-
                 {/* USDT Balance */}
                 <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600">
                   <div className="flex items-center justify-between">
@@ -372,20 +359,6 @@ Created: ${new Date().toISOString()}
                     <TrendingUp size={40} className="text-green-500" />
                   </div>
                 </div>
-
-                {/* USDC Balance 
-                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDC Balance</p>
-                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {wallet.balances.USDC.toFixed(4)} USDC
-                      </p>
-                    </div>
-                    <PieChart size={40} className="text-blue-500" />
-                  </div>
-                </div>
-              </div> */}
 
               {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -504,4 +477,5 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+
 
