@@ -347,7 +347,7 @@ Created: ${new Date().toISOString()}
 
               {/* Balances Grid */}
               <div className="grid grid-cols-1 gap-4 mb-6">
-                {/* SOL Balance */}
+                {/* SOL Balance 
                 <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600">
                   <div className="flex items-center justify-between">
                     <div>
@@ -358,7 +358,7 @@ Created: ${new Date().toISOString()}
                     </div>
                     <Wallet size={40} className="text-purple-500" />
                   </div>
-                </div>
+                </div> */}
 
                 {/* USDT Balance */}
                 <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600">
@@ -373,7 +373,7 @@ Created: ${new Date().toISOString()}
                   </div>
                 </div>
 
-                {/* USDC Balance */}
+                {/* USDC Balance 
                 <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-600">
                   <div className="flex items-center justify-between">
                     <div>
@@ -385,7 +385,7 @@ Created: ${new Date().toISOString()}
                     <PieChart size={40} className="text-blue-500" />
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -504,3 +504,4 @@ export default function SettingsPage() {
     </Suspense>
   );
 }
+
