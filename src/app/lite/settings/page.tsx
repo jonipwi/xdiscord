@@ -44,54 +44,22 @@ function SettingsContent() {
   const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check for logged-in user from localStorage (wallet login) or URL
-  useEffect(() => {
-    const urlUsername = searchParams.get('username');
-    
-    if (urlUsername) {
-      setUsername(urlUsername);
-    } else {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          if (userData.username) {
-            setUsername(userData.username);
-          }
-          // Also load wallet address if available
-          if (userData.wallet_address) {
-            setWallet({
-              address: userData.wallet_address,
-              balances: { SOL: 0, USDT: 0, USDC: 0 },
-              createdAt: new Date()
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load user from localStorage:', e);
+  // Fetch wallet balance from backend
+  const fetchWalletBalance = async (address: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/wallet/balance?address=${encodeURIComponent(address)}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setWallet(prev => prev ? {
+          ...prev,
+          balances: data.data
+        } : null);
       }
+    } catch (error) {
+      console.error('Failed to fetch wallet balance:', error);
     }
-  }, [searchParams]);
-
-  // Load saved settings
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
-    const savedProfile = localStorage.getItem('profilePicture') || '';
-    const savedWallet = localStorage.getItem('wallet');
-    
-    setTheme(savedTheme);
-    setProfilePicture(savedProfile);
-    
-    if (savedWallet) {
-      setWallet(JSON.parse(savedWallet));
-    }
-
-    // Apply theme
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-
-    // Fetch PFI metrics from backend
-    fetchPFIMetrics();
-  }, []);
+  };
 
   const fetchPFIMetrics = async () => {
     try {
@@ -127,6 +95,72 @@ function SettingsContent() {
       setPfiMetrics({ score: 0, index: 0, share: 0 });
     }
   };
+
+  // Check for logged-in user from localStorage (wallet login) or URL
+  useEffect(() => {
+    const urlUsername = searchParams.get('username');
+    
+    if (urlUsername) {
+      setUsername(urlUsername);
+    } else {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData = JSON.parse(userStr);
+          if (userData.username) {
+            setUsername(userData.username);
+          }
+          // Also load wallet address if available
+          if (userData.wallet_address) {
+            const walletInfo: WalletInfo = {
+              address: userData.wallet_address,
+              balances: { SOL: 0, USDT: 0, USDC: 0 },
+              createdAt: new Date()
+            };
+            setWallet(walletInfo);
+            
+            // Fetch actual balance for the wallet
+            fetchWalletBalance(userData.wallet_address);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load user from localStorage:', e);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Load saved settings
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    const savedProfile = localStorage.getItem('profilePicture') || '';
+    
+    setTheme(savedTheme);
+    setProfilePicture(savedProfile);
+
+    // Don't override wallet if already loaded from user data
+    if (!wallet) {
+      const savedWallet = localStorage.getItem('wallet');
+      if (savedWallet) {
+        const walletData = JSON.parse(savedWallet);
+        setWallet(walletData);
+        
+        // Fetch updated balance
+        if (walletData.address) {
+          fetchWalletBalance(walletData.address);
+        }
+      }
+    }
+
+    // Apply theme
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
+    // Fetch PFI metrics from backend
+    if (username !== 'Guest') {
+      fetchPFIMetrics();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, wallet]);
 
   const handleThemeToggle = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
