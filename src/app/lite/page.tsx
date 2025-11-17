@@ -39,20 +39,30 @@ function LiteChatListContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [username, setUsername] = useState('Guest');
+  const [walletAddress, setWalletAddress] = useState('');
 
-  // Check for logged-in user from localStorage (wallet login)
+  // Check for logged-in user from localStorage (wallet login) or URL
   useEffect(() => {
     const urlUsername = searchParams.get('username');
+    const urlWallet = searchParams.get('wallet');
     
     if (urlUsername) {
       setUsername(urlUsername);
+    }
+    
+    if (urlWallet) {
+      setWalletAddress(urlWallet);
     } else {
+      // Fallback to localStorage
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const user = JSON.parse(userStr);
-          if (user.username) {
+          if (!urlUsername && user.username) {
             setUsername(user.username);
+          }
+          if (user.wallet_address) {
+            setWalletAddress(user.wallet_address);
           }
         }
       } catch (e) {
@@ -159,12 +169,14 @@ function LiteChatListContent() {
 
   // Handle chat item click
   const handleChatClick = (item: ChatListItem) => {
+    const walletParam = walletAddress ? `&wallet=${encodeURIComponent(walletAddress)}` : '';
+    
     if (item.type === 'room') {
       const roomId = item.id.replace('room-', '');
-      router.push(`/lite/chat?room=${item.name.toLowerCase()}&roomId=${roomId}&username=${encodeURIComponent(username)}`);
+      router.push(`/lite/chat?room=${item.name.toLowerCase()}&roomId=${roomId}&username=${encodeURIComponent(username)}${walletParam}`);
     } else {
       // For user chats, create a private room or navigate to existing one
-      router.push(`/lite/chat?user=${item.name}&userId=${item.id.replace('user-', '')}&username=${encodeURIComponent(username)}`);
+      router.push(`/lite/chat?user=${item.name}&userId=${item.id.replace('user-', '')}&username=${encodeURIComponent(username)}${walletParam}`);
     }
   };
 
@@ -183,7 +195,10 @@ function LiteChatListContent() {
               {t.online}
             </div>
             <button
-              onClick={() => router.push(`/lite/settings?username=${encodeURIComponent(username)}`)}
+              onClick={() => {
+                const walletParam = walletAddress ? `&wallet=${encodeURIComponent(walletAddress)}` : '';
+                router.push(`/lite/settings?username=${encodeURIComponent(username)}${walletParam}`);
+              }}
               className="p-3 hover:bg-gray-100 rounded-full transition-colors"
               title="Settings"
             >

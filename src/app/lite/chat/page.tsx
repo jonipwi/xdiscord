@@ -34,6 +34,7 @@ function ChatRoomContent() {
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [username, setUsername] = useState('Guest');
+  const [walletAddress, setWalletAddress] = useState('');
 
   // Get chat info from URL params
   const room = searchParams.get('room') || '';
@@ -44,16 +45,25 @@ function ChatRoomContent() {
   // Check for logged-in user from localStorage (wallet login) or URL
   useEffect(() => {
     const urlUsername = searchParams.get('username');
+    const urlWallet = searchParams.get('wallet');
     
     if (urlUsername) {
       setUsername(urlUsername);
+    }
+    
+    if (urlWallet) {
+      setWalletAddress(urlWallet);
     } else {
+      // Fallback to localStorage
       try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
           const userData = JSON.parse(userStr);
-          if (userData.username) {
+          if (!urlUsername && userData.username) {
             setUsername(userData.username);
+          }
+          if (userData.wallet_address) {
+            setWalletAddress(userData.wallet_address);
           }
         }
       } catch (e) {
@@ -352,7 +362,10 @@ function ChatRoomContent() {
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => router.push(`/lite?username=${encodeURIComponent(username)}`)}
+              onClick={() => {
+                const walletParam = walletAddress ? `&wallet=${encodeURIComponent(walletAddress)}` : '';
+                router.push(`/lite?username=${encodeURIComponent(username)}${walletParam}`);
+              }}
               className="p-2 hover:bg-gray-100 rounded-full active:bg-gray-200 transition-colors"
             >
               <ArrowLeft size={28} className="text-gray-700" />
@@ -380,7 +393,10 @@ function ChatRoomContent() {
           </div>
 
           <button 
-            onClick={() => router.push(`/lite/settings?username=${encodeURIComponent(username)}`)}
+            onClick={() => {
+              const walletParam = walletAddress ? `&wallet=${encodeURIComponent(walletAddress)}` : '';
+              router.push(`/lite/settings?username=${encodeURIComponent(username)}${walletParam}`);
+            }}
             className="p-3 hover:bg-gray-100 rounded-full transition-colors"
             title="Settings"
           >
