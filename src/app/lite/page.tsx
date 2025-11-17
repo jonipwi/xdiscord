@@ -158,7 +158,7 @@ function LiteChatListContent() {
           </div>
           <div className="flex items-center space-x-3">
             <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-lg font-semibold flex items-center gap-2">
-              <span className="text-amber-500">★</span>
+              <span className="text-amber-500">✨</span>
               {t.online}
             </div>
             <button
