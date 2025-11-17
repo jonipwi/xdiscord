@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { ArrowLeft, Camera, Sun, Moon, Wallet, TrendingUp, PieChart, Download } from 'lucide-react';
+import { ArrowLeft, Camera, Sun, Moon, Wallet, TrendingUp, PieChart, Download, Copy, Check, Globe } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLanguage } from '@/utils/LanguageContext';
+import { Language, languageNames } from '@/utils/translations';
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8088'}/api`;
 
@@ -28,6 +30,7 @@ function SettingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const username = searchParams.get('username') || 'Guest';
+  const { language, setLanguage, t, isRTL } = useLanguage();
   
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [profilePicture, setProfilePicture] = useState<string>('');
@@ -38,6 +41,7 @@ function SettingsContent() {
     share: 0
   });
   const [isCreatingWallet, setIsCreatingWallet] = useState(false);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved settings
@@ -201,12 +205,12 @@ function SettingsContent() {
     // Get secret phrase from localStorage (if available)
     const secretPhrase = localStorage.getItem(`wallet_phrase_${wallet.address}`) || 'Secret phrase not available (only shown once during creation)';
 
-    const walletDetails = `XCHAT WALLET DETAILS
+    const walletDetails = `XCHAT - HEAVENLY TREASURY DETAILS
 ========================
 
 Username: ${username}
-Wallet Address: ${wallet.address}
-Network: Solana
+Sacred Address: ${wallet.address}
+Network: Heaven Network
 
 Secret Phrase (BIP39 Mnemonic):
 ${secretPhrase}
@@ -215,7 +219,7 @@ IMPORTANT SECURITY NOTES:
 - Never share your secret phrase with anyone
 - Store this file in a secure location
 - Delete this file after backing up to a secure location
-- Anyone with access to your secret phrase can access your funds
+- Anyone with access to your secret phrase can access your treasury
 
 Created: ${new Date().toISOString()}
 `;
@@ -232,6 +236,19 @@ Created: ${new Date().toISOString()}
     window.URL.revokeObjectURL(url);
   };
 
+  const copyToClipboard = async () => {
+    if (!wallet) return;
+    
+    try {
+      await navigator.clipboard.writeText(wallet.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy address:', error);
+      alert('Failed to copy address to clipboard');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
@@ -242,9 +259,9 @@ Created: ${new Date().toISOString()}
               onClick={() => router.push(`/lite?username=${encodeURIComponent(username)}`)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
             >
-              <ArrowLeft size={28} className="text-gray-700 dark:text-gray-300" />
+              <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
             </button>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Settings</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{t.settings}</h1>
           </div>
         </div>
       </header>
@@ -255,7 +272,7 @@ Created: ${new Date().toISOString()}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Camera size={28} className="mr-3 text-green-500" />
-            Profile Picture
+            {t.profile}
           </h2>
           
           <div className="flex items-center space-x-6">
@@ -278,7 +295,7 @@ Created: ${new Date().toISOString()}
             <div>
               <p className="text-2xl font-semibold text-gray-800 dark:text-white">{username}</p>
               <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
-                Click camera icon to change photo
+                {t.clickCameraToChange}
               </p>
             </div>
           </div>
@@ -300,16 +317,16 @@ Created: ${new Date().toISOString()}
             ) : (
               <Moon size={28} className="mr-3 text-blue-500" />
             )}
-            Theme
+            {t.theme}
           </h2>
           
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xl font-semibold text-gray-800 dark:text-white">
-                {theme === 'light' ? 'Light Mode' : 'Dark Mode'}
+                {theme === 'light' ? t.lightMode : t.darkMode}
               </p>
               <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">
-                Switch between light and dark theme
+                {t.switchThemeDescription}
               </p>
             </div>
             
@@ -328,43 +345,75 @@ Created: ${new Date().toISOString()}
           </div>
         </section>
 
+        {/* Language Section */}
+        <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+            <Globe size={28} className="mr-3 text-indigo-500" />
+            {t.language}
+          </h2>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(Object.keys(languageNames) as Language[]).map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={`p-4 rounded-xl border-2 transition-all text-center ${
+                  language === lang
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700'
+                }`}
+              >
+                <p className="text-lg font-semibold">{languageNames[lang]}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Digital Wallet Section */}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <Wallet size={28} className="mr-3 text-purple-500" />
-            Digital Wallet (Solana Network)
+            {t.walletTitle}
           </h2>
           
           {wallet ? (
             <>
               {/* Wallet Address */}
               <div className="mb-6 p-5 bg-gray-50 dark:bg-gray-700 rounded-xl">
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">Wallet Address</p>
-                <p className="text-base text-gray-800 dark:text-white font-mono break-all">
-                  {wallet.address}
-                </p>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-2">{t.sacredAddress}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-base text-gray-800 dark:text-white font-mono break-all flex-1">
+                    <b>{wallet.address}</b>
+                  </p>
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex-shrink-0 p-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                    title="Copy address to clipboard"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={20} />
+                        <span className="text-sm font-semibold">{t.copied}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={20} />
+                        <span className="text-sm font-semibold">{t.copyAddress}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Balances Grid */}
               <div className="grid grid-cols-1 gap-4 mb-6">
                 {/* SOL Balance */}
-                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">SOL Balance</p>
-                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">
-                        {wallet.balances.SOL.toFixed(4)} SOL
-                      </p>
-                    </div>
-                    <Wallet size={40} className="text-purple-500" />
-                  </div>
-                </div>
-
+                
                 {/* USDT Balance */}
                 <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDT Balance</p>
+                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.tokenEntrusted}</p>
                       <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                         {wallet.balances.USDT.toFixed(4)} USDT
                       </p>
@@ -374,17 +423,13 @@ Created: ${new Date().toISOString()}
                 </div>
 
                 {/* USDC Balance */}
-                <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">USDC Balance</p>
-                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {wallet.balances.USDC.toFixed(4)} USDC
-                      </p>
-                    </div>
-                    <PieChart size={40} className="text-blue-500" />
-                  </div>
-                </div>
+              </div>
+                
+              {/* Spiritual Note */}
+              <div className="mb-6 p-5 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-gray-700 dark:to-gray-600 rounded-xl border-2 border-amber-200 dark:border-amber-700">
+                <p className="text-base text-amber-900 dark:text-amber-100 text-center leading-relaxed">
+                  ✨ <span className="font-semibold">{t.spiritualNoteRemember}</span> {t.spiritualNoteStored} <span className="font-semibold text-amber-700 dark:text-amber-300">{t.spiritualNoteFaith}</span>, <span className="font-semibold text-amber-700 dark:text-amber-300">{t.spiritualNoteLove}</span>, {t.and} <span className="font-semibold text-amber-700 dark:text-amber-300">{t.spiritualNoteJust}</span> {t.spiritualNoteHeaven}
+                </p>
               </div>
 
               {/* Action Buttons */}
@@ -393,21 +438,21 @@ Created: ${new Date().toISOString()}
                   onClick={refreshWalletBalances}
                   className="py-4 px-6 bg-purple-500 text-white rounded-xl hover:bg-purple-600 text-xl font-semibold"
                 >
-                  Refresh Balances
+                  {t.refreshBalances}
                 </button>
                 <button
                   onClick={downloadWalletDetails}
                   className="py-4 px-6 bg-blue-500 text-white rounded-xl hover:bg-blue-600 text-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <Download size={24} />
-                  Download Details
+                  {t.downloadTreasury}
                 </button>
               </div>
             </>
           ) : (
             <>
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                Create a Solana wallet to hold SOL, USDT, and USDC all in one address.
+                {t.walletDescription}
               </p>
               
               <button
@@ -415,7 +460,7 @@ Created: ${new Date().toISOString()}
                 disabled={isCreatingWallet}
                 className="w-full py-4 px-6 bg-linear-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-xl font-semibold"
               >
-                {isCreatingWallet ? 'Creating Wallet...' : 'Create Solana Wallet'}
+                {isCreatingWallet ? t.creatingWallet : t.createWallet}
               </button>
             </>
           )}
@@ -425,7 +470,7 @@ Created: ${new Date().toISOString()}
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
             <TrendingUp size={28} className="mr-3 text-green-500" />
-            PFI Metrics
+            {t.pfiMetrics}
           </h2>
           
           <div className="grid grid-cols-1 gap-4">
@@ -433,7 +478,7 @@ Created: ${new Date().toISOString()}
             <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-green-50 to-teal-50 dark:from-gray-700 dark:to-gray-600">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">PFI Score</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.pfiScore}</p>
                   <p className="text-4xl font-bold text-green-600 dark:text-green-400">
                     {pfiMetrics.score}
                   </p>
@@ -452,7 +497,7 @@ Created: ${new Date().toISOString()}
             <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-600">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">PFI Index</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.pfiIndex}</p>
                   <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                     {pfiMetrics.index.toFixed(1)}%
                   </p>
@@ -460,7 +505,7 @@ Created: ${new Date().toISOString()}
                 <TrendingUp size={48} className="text-blue-500" />
               </div>
               <p className="text-base text-gray-500 dark:text-gray-400 mt-2">
-                Performance indicator
+                {t.pfiPerformanceIndicator}
               </p>
             </div>
 
@@ -468,7 +513,7 @@ Created: ${new Date().toISOString()}
             <div className="border dark:border-gray-700 rounded-xl p-5 bg-linear-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">PFI Share</p>
+                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-1">{t.pfiShare}</p>
                   <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">
                     {pfiMetrics.share.toFixed(2)}
                   </p>
@@ -476,7 +521,7 @@ Created: ${new Date().toISOString()}
                 <Wallet size={48} className="text-purple-500" />
               </div>
               <p className="text-base text-gray-500 dark:text-gray-400 mt-2">
-                Your share value
+                {t.pfiShareValue}
               </p>
             </div>
           </div>
@@ -485,7 +530,7 @@ Created: ${new Date().toISOString()}
             onClick={fetchPFIMetrics}
             className="w-full mt-4 py-3 px-6 bg-green-500 text-white rounded-xl hover:bg-green-600 text-lg font-semibold"
           >
-            Refresh Metrics
+            {t.refreshMetrics}
           </button>
         </section>
       </div>
