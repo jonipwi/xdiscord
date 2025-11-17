@@ -62,10 +62,26 @@ function SettingsContent() {
 
   const fetchPFIMetrics = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pfi/metrics?username=${encodeURIComponent(username)}`);
+      // Try xchat backend proxy first (port 8088)
+      let response = await fetch(`${API_BASE_URL}/pfi/metrics?username=${encodeURIComponent(username)}`);
+      
+      // If xchat backend doesn't have the endpoint, try faircoin API directly
+      if (!response.ok) {
+        const faircoinAPI = process.env.NEXT_PUBLIC_FAIRCOIN_API_URL || 'http://localhost:8100';
+        response = await fetch(`${faircoinAPI}/api/v1/fairness/indexes?username=${encodeURIComponent(username)}`);
+      }
+      
       const data = await response.json();
       
-      if (data.success && data.data) {
+      // Handle faircoin API response format
+      if (data.success && data.index) {
+        setPfiMetrics({
+          score: data.index.pfi_total || 0,
+          index: data.index.total_fairness_score || 0,
+          share: data.index.approved_submissions || 0
+        });
+      } else if (data.success && data.data) {
+        // Handle xchat backend proxy format
         setPfiMetrics({
           score: data.data.pfi_score || 0,
           index: data.data.pfi_index || 0,
